@@ -2,6 +2,8 @@
 
 A full-stack health records management application with Telegram bot integration for tracking blood glucose and blood pressure readings.
 
+> **Created with [OpenCode](https://opencode.ai)** - An AI-powered coding assistant
+
 ## Features
 
 - **Document Management**: Upload and analyze medical documents
