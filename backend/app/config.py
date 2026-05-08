@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     BACKEND_PORT: int = 8000
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
+    AWS_S3_BUCKET: str = ""
+    AWS_REGION: str = "us-east-1"
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
 
     class Config:
         env_file = Path(__file__).parent.parent.parent / ".env"

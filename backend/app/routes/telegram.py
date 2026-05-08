@@ -120,38 +120,52 @@ async def get_health_readings(
 
 @router.get("/readings/summary")
 async def get_readings_summary(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
-    """Get summary of latest readings"""
+    """Get summary of average readings"""
     user = await get_current_user(token, db)
     
-    glucose = await db.health_readings.find_one(
-        {"user_id": str(user["_id"]), "type": "glucose"},
-        sort=[("timestamp", -1)]
-    )
+    # Calculate average glucose
+    glucose_pipeline = [
+        {"$match": {"user_id": str(user["_id"]), "type": "glucose"}},
+        {"$group": {
+            "_id": "$type",
+            "avg_value": {"$avg": "$value"},
+            "unit": {"$first": "$unit"},
+            "count": {"$sum": 1}
+        }}
+    ]
+    glucose_result = await db.health_readings.aggregate(glucose_pipeline).to_list(length=1)
     
-    bp = await db.health_readings.find_one(
-        {"user_id": str(user["_id"]), "type": "bp"},
-        sort=[("timestamp", -1)]
-    )
+    # Calculate average blood pressure
+    bp_pipeline = [
+        {"$match": {"user_id": str(user["_id"]), "type": "bp"}},
+        {"$group": {
+            "_id": "$type",
+            "avg_systolic": {"$avg": "$systolic"},
+            "avg_diastolic": {"$avg": "$diastolic"},
+            "count": {"$sum": 1}
+        }}
+    ]
+    bp_result = await db.health_readings.aggregate(bp_pipeline).to_list(length=1)
     
-    glucose_count = await db.health_readings.count_documents({"user_id": str(user["_id"]), "type": "glucose"})
-    bp_count = await db.health_readings.count_documents({"user_id": str(user["_id"]), "type": "bp"})
+    glucose_data = glucose_result[0] if glucose_result else None
+    bp_data = bp_result[0] if bp_result else None
     
     return {
         "glucose": {
             "latest": {
-                "value": glucose["value"],
-                "unit": glucose.get("unit", "mg/dL"),
-                "timestamp": glucose["timestamp"].isoformat()
-            } if glucose else None,
-            "count": glucose_count
+                "value": round(glucose_data["avg_value"], 1) if glucose_data else None,
+                "unit": glucose_data["unit"] if glucose_data else "mg/dL",
+                "timestamp": None  # No timestamp for average
+            } if glucose_data else None,
+            "count": glucose_data["count"] if glucose_data else 0
         },
         "bp": {
             "latest": {
-                "systolic": bp["systolic"],
-                "diastolic": bp["diastolic"],
-                "timestamp": bp["timestamp"].isoformat()
-            } if bp else None,
-            "count": bp_count
+                "systolic": round(bp_data["avg_systolic"], 1) if bp_data else None,
+                "diastolic": round(bp_data["avg_diastolic"], 1) if bp_data else None,
+                "timestamp": None  # No timestamp for average
+            } if bp_data else None,
+            "count": bp_data["count"] if bp_data else 0
         }
     }
 

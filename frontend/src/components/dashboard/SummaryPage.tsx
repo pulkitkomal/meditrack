@@ -74,7 +74,7 @@ const Summary = () => {
         </div>
         <p className="text-gray-500 text-lg mb-2">No data available</p>
         <p className="text-gray-400 text-sm mb-4">Upload some documents to see your health summary</p>
-        <button onClick={() => navigate("/dashboard")} className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700">
+        <button onClick={() => navigate("/dashboard?tab=overview")} className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700">
           Go to Dashboard
         </button>
       </div>
@@ -95,7 +95,7 @@ const Summary = () => {
             <p className="text-xs text-gray-400">Your comprehensive health overview</p>
           </div>
         </div>
-        <button onClick={() => navigate("/dashboard")} className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+        <button onClick={() => navigate("/dashboard?tab=overview")} className="text-sm text-blue-600 hover:text-blue-700 font-medium">
           Back to Dashboard →
         </button>
       </nav>

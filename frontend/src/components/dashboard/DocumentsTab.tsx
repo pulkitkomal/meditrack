@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { documentService, analysisService } from "../../services/api";
-import FileUpload from "./FileUpload";
+import FileUpload, { BulkUpload } from "./FileUpload";
+import { TaskQueueStatus } from "./TaskQueueStatus";
 import { Button } from "../ui/button";
 import type { Document } from "../../types";
 
@@ -21,12 +22,33 @@ const categoryIcons: Record<string, string> = {
 const DocumentsTab = () => {
   const [docs, setDocs] = useState<DocWithAnalysis[]>([]);
   const [filter, setFilter] = useState("");
+  const [dateRange, setDateRange] = useState("");
+  const [uploadRange, setUploadRange] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const navigate = useNavigate();
 
-  const fetchDocs = async () => {
+  const fetchDocs = async (resetFilters = false) => {
     try {
-      const res = await documentService.list(filter || undefined);
+      const params: any = {};
+      
+      if (!resetFilters) {
+        if (filter) params.category = filter;
+        
+        // Parse date range (format: "from|to")
+        if (dateRange) {
+          const [from, to] = dateRange.split("|");
+          if (from) params.date_from = from;
+          if (to) params.date_to = to;
+        }
+        if (uploadRange) {
+          const [from, to] = uploadRange.split("|");
+          if (from) params.upload_from = from;
+          if (to) params.upload_to = to;
+        }
+      }
+      
+      const res = await documentService.list(params);
       setDocs(res.data);
     } catch (error) {
       console.error("Failed to fetch documents:", error);
@@ -37,14 +59,41 @@ const DocumentsTab = () => {
 
   useEffect(() => {
     fetchDocs();
-  }, [filter]);
+  }, [filter, dateRange, uploadRange]);
+
+  const processQueue = async () => {
+    try {
+      await analysisService.processQueue(5);
+      setRefreshTrigger(r => r + 1);
+    } catch (error) {
+      console.error("Failed to process queue:", error);
+    }
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      processQueue();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleAnalyze = async (docId: string) => {
     try {
       await analysisService.triggerAnalysis(docId);
-      fetchDocs();
+      setRefreshTrigger(r => r + 1);
     } catch (error) {
       console.error("Analysis failed:", error);
+    }
+  };
+
+  const handleDelete = async (docId: string) => {
+    if (!confirm("Delete this analysis and document?")) return;
+    try {
+      await analysisService.deleteAnalysis(docId);
+      fetchDocs();
+      setRefreshTrigger(r => r + 1);
+    } catch (error) {
+      console.error("Delete failed:", error);
     }
   };
 
@@ -59,28 +108,76 @@ const DocumentsTab = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Upload Section */}
-      <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-blue-100">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Upload Document</h2>
-        <FileUpload onUpload={fetchDocs} />
+    <div className="space-y-4 md:space-y-6">
+      {/* Upload Section - Stack on mobile, grid on desktop */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 md:p-6 shadow-lg border border-blue-100">
+          <h2 className="text-base md:text-lg font-semibold text-gray-800 mb-3 md:mb-4">Single Upload</h2>
+          <FileUpload onUpload={() => { 
+            fetchDocs(true); 
+            setRefreshTrigger(r => r + 1); 
+          }} />
+        </div>
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 md:p-6 shadow-lg border border-blue-100">
+          <h2 className="text-base md:text-lg font-semibold text-gray-800 mb-3 md:mb-4">Bulk Upload</h2>
+          <BulkUpload onUpload={() => { 
+            fetchDocs(true); 
+            setRefreshTrigger(r => r + 1); 
+          }} />
+        </div>
       </div>
 
+      {/* Analysis Queue Status */}
+      <TaskQueueStatus refreshTrigger={refreshTrigger} />
+
       {/* Filter */}
-      <div className="flex items-center gap-4 overflow-x-auto pb-2">
-        {categories.map((cat) => (
-          <button
-            key={cat.value}
-            onClick={() => setFilter(cat.value)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              filter === cat.value
-                ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
-                : "bg-white/90 text-gray-600 hover:bg-gray-50 border border-gray-200"
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
+      <div className="bg-white/90 backdrop-blur-sm rounded-xl p-3 md:p-4 shadow-lg border border-blue-100">
+        <div className="flex flex-col gap-3">
+          {/* Category Filter - Horizontal scroll on mobile */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 -mx-2 px-2 md:px-0">
+            {categories.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => setFilter(cat.value)}
+                className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${
+                  filter === cat.value
+                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+                    : "bg-white/90 text-gray-600 hover:bg-gray-50 border border-gray-200"
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+          
+          {/* Date Filters - Stack on mobile */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="w-full sm:w-auto px-2 md:px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:border-blue-500 focus:ring-blue-500"
+            >
+              <option value="">Doc Date: All</option>
+              <option value={`${new Date().toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>Today</option>
+              <option value={`${new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>Last 7 Days</option>
+              <option value={`${new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>Last 30 Days</option>
+              <option value={`${new Date(Date.now() - 90*24*60*60*1000).toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>Last 90 Days</option>
+              <option value={`${new Date(Date.now() - 365*24*60*60*1000).toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>This Year</option>
+            </select>
+            <select
+              value={uploadRange}
+              onChange={(e) => setUploadRange(e.target.value)}
+              className="w-full sm:w-auto px-2 md:px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:border-blue-500 focus:ring-blue-500"
+            >
+              <option value="">Upload: All</option>
+              <option value={`${new Date().toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>Today</option>
+              <option value={`${new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>Last 7 Days</option>
+              <option value={`${new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>Last 30 Days</option>
+              <option value={`${new Date(Date.now() - 90*24*60*60*1000).toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>Last 90 Days</option>
+              <option value={`${new Date(Date.now() - 365*24*60*60*1000).toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>This Year</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Documents List */}
@@ -90,31 +187,32 @@ const DocumentsTab = () => {
             <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : docs.length === 0 ? (
-          <div className="p-8 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="p-6 md:p-8 text-center">
+            <div className="w-12 md:w-16 h-12 md:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+              <svg className="w-6 md:w-8 h-6 md:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">No Documents Found</h3>
-            <p className="text-gray-600">
+            <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-2">No Documents Found</h3>
+            <p className="text-sm md:text-base text-gray-600">
               {filter ? `No ${filter.replace('_', ' ')} documents yet` : "Upload your first document to get started"}
             </p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
             {docs.map((doc) => (
-              <div key={doc.id} className="p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+              <div key={doc.id} className="p-3 md:p-4 hover:bg-gray-50 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  {/* Document Info */}
+                  <div className="flex items-start gap-3 md:gap-4 min-w-0">
+                    <div className={`w-8 md:w-10 h-8 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                       doc.category === 'lab_results' ? 'bg-blue-100' :
                       doc.category === 'prescriptions' ? 'bg-purple-100' :
                       doc.category === 'imaging' ? 'bg-green-100' :
                       doc.category === 'vaccination_records' ? 'bg-amber-100' :
                       'bg-gray-100'
                     }`}>
-                      <svg className={`w-5 h-5 ${
+                      <svg className={`w-4 md:w-5 h-4 md:h-5 ${
                         doc.category === 'lab_results' ? 'text-blue-600' :
                         doc.category === 'prescriptions' ? 'text-purple-600' :
                         doc.category === 'imaging' ? 'text-green-600' :
@@ -124,36 +222,54 @@ const DocumentsTab = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={categoryIcons[doc.category] || categoryIcons.lab_results} />
                       </svg>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-800">{doc.original_name}</p>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-800 text-sm md:text-base truncate">{doc.original_name}</p>
+                      <div className="flex flex-wrap items-center gap-1 md:gap-2 text-xs md:text-sm text-gray-500">
                         <span className="capitalize">{doc.category.replace('_', ' ')}</span>
+                        {doc.upload_date && (
+                          <>
+                            <span>•</span>
+                            <span className="truncate">Uploaded: {new Date(doc.upload_date).toLocaleDateString()}</span>
+                          </>
+                        )}
                         {doc.document_date && (
                           <>
                             <span>•</span>
-                            <span>{new Date(doc.document_date).toLocaleDateString()}</span>
+                            <span className="truncate">Doc: {new Date(doc.document_date).toLocaleDateString()}</span>
                           </>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 ml-11 sm:ml-0">
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => navigate(`/analysis/${doc.id}`)}
+                      className="text-xs md:text-sm"
                     >
                       View
                     </Button>
                     {!doc.analysis_id && (
                       <Button 
                         size="sm"
-                        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-xs md:text-sm"
                         onClick={() => handleAnalyze(doc.id)}
                       >
                         Analyze
                       </Button>
                     )}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                      onClick={() => handleDelete(doc.id)}
+                    >
+                      <svg className="w-3 md:w-4 h-3 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </Button>
                   </div>
                 </div>
               </div>

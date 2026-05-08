@@ -27,7 +27,6 @@ async def lifespan(app: FastAPI):
     app.mongo_client = AsyncIOMotorClient(settings.MONGO_URL)
     app.mongo_db = app.mongo_client[settings.MONGO_DB_NAME]
     
-    # Initialize Telegram bot (in separate process)
     import multiprocessing
     def run_bot_process():
         import asyncio

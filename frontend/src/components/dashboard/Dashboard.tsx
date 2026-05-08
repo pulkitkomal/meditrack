@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { authService } from "../../services/api";
 import type { User } from "../../types";
 import { Button } from "../ui/button";
@@ -39,7 +39,9 @@ const getMobileNavItems = (telegramConnected: boolean) => {
 };
 
 const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) => void }) => {
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [searchParams] = useSearchParams();
+  const initialTab = (searchParams.get("tab") as TabId) || "overview";
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [chatOpen, setChatOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
@@ -53,8 +55,16 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && (tab === "overview" || tab === "readings" || tab === "documents" || tab === "insights" || tab === "chat" || tab === "profile")) {
+      setActiveTab(tab as TabId);
+    }
+  }, [searchParams]);
+
   const handleTabChange = (tab: string) => {
     setActiveTab(tab as TabId);
+    navigate(`?tab=${tab}`, { replace: true });
   };
 
   const logout = () => {

@@ -49,7 +49,7 @@ const History = () => {
             <p className="text-xs text-gray-400">Your medical document analyses</p>
           </div>
         </div>
-        <Button variant="outline" onClick={() => navigate("/dashboard")} className="border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200">
+        <Button variant="outline" onClick={() => navigate("/dashboard?tab=overview")} className="border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200">
           Back to Dashboard
         </Button>
       </nav>
@@ -154,7 +154,7 @@ const History = () => {
               </div>
               <p className="text-gray-500 text-lg mb-2">No analysis history yet</p>
               <p className="text-gray-400 text-sm mb-4">Upload a document to get started with analysis</p>
-              <Button onClick={() => navigate("/dashboard")} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
+              <Button onClick={() => navigate("/dashboard?tab=overview")} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
                 Go to Dashboard
               </Button>
             </div>

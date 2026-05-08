@@ -8,6 +8,20 @@ interface Message {
   sources?: { doc_name: string; category: string }[];
 }
 
+const parseMarkdown = (text: string): string => {
+  let result = text;
+  result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  result = result.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  result = result.replace(/`(.+?)`/g, '<code class="bg-gray-100 px-1 rounded text-sm">$1</code>');
+  result = result.replace(/^### (.+)$/gm, '<h4 class="font-semibold text-md mt-3 mb-1">$1</h4>');
+  result = result.replace(/^## (.+)$/gm, '<h3 class="font-semibold text-lg mt-3 mb-1">$1</h3>');
+  result = result.replace(/^# (.+)$/gm, '<h2 class="font-bold text-xl mt-3 mb-1">$1</h2>');
+  result = result.replace(/^\* (.+)$/gm, '<li class="ml-4">$1</li>');
+  result = result.replace(/^− (.+)$/gm, '<li class="ml-4">$1</li>');
+  result = result.replace(/\n/g, '<br/>');
+  return result;
+};
+
 const ChatWidget = ({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => void }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -120,7 +134,7 @@ const ChatWidget = ({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => voi
                   : "bg-gray-100 text-gray-800 rounded-bl-md"
               }`}
             >
-              <p className="whitespace-pre-wrap">{msg.content}</p>
+              <p className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: msg.role === "bot" ? parseMarkdown(msg.content) : msg.content }}></p>
               {msg.sources && msg.sources.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-gray-200">
                   <p className="text-xs text-gray-500 mb-1">Sources:</p>

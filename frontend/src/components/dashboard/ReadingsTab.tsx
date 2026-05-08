@@ -52,10 +52,11 @@ const ReadingsTab = () => {
     }
   };
 
-  const formatDate = (timestamp: string) => {
+const formatDate = (timestamp: string | null) => {
+    if (!timestamp) return "N/A";
     const date = new Date(timestamp);
     return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
+};
 
   const getStatusColor = (type: string, value: number) => {
     if (type === "glucose") {
@@ -169,22 +170,22 @@ const ReadingsTab = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {summary?.glucose.latest ? (
-              <div className="space-y-3">
-                <p className={`text-4xl font-bold ${getStatusColor("glucose", summary.glucose.latest.value)}`}>
-                  {summary.glucose.latest.value}
-                  <span className="text-lg font-normal text-gray-500 ml-1">{summary.glucose.latest.unit}</span>
-                </p>
-                {renderGlucoseChart()}
-                <p className="text-xs text-gray-400">
-                  Last reading: {formatDate(summary.glucose.latest.timestamp)}
-                </p>
-              </div>
-            ) : (
-              <div className="h-32 flex items-center justify-center">
-                <p className="text-gray-400">No glucose readings yet</p>
-              </div>
-            )}
+             {summary?.glucose.latest ? (
+               <div className="space-y-3">
+                 <p className={`text-4xl font-bold ${getStatusColor("glucose", summary.glucose.latest.value)}`}>
+                   {summary.glucose.latest.value}
+                   <span className="text-lg font-normal text-gray-500 ml-1">{summary.glucose.latest.unit}</span>
+                 </p>
+                 {renderGlucoseChart()}
+                 <p className="text-xs text-gray-400">
+                   Average glucose: {formatDate(summary.glucose.latest.timestamp)}
+                 </p>
+               </div>
+             ) : (
+               <div className="h-32 flex items-center justify-center">
+                 <p className="text-gray-400">No glucose readings yet</p>
+               </div>
+             )}
           </CardContent>
         </Card>
 
@@ -196,32 +197,32 @@ const ReadingsTab = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {summary?.bp.latest ? (
-              <div className="space-y-3">
-                <p className="text-4xl font-bold text-gray-800">
-                  {summary.bp.latest.systolic}/{summary.bp.latest.diastolic}
-                  <span className="text-lg font-normal text-gray-500 ml-1">mmHg</span>
-                </p>
-                {renderBPChart()}
-                <div className="flex items-center gap-4 text-xs">
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                    Systolic
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                    Diastolic
-                  </span>
-                </div>
-                <p className="text-xs text-gray-400">
-                  Last reading: {formatDate(summary.bp.latest.timestamp)}
-                </p>
-              </div>
-            ) : (
-              <div className="h-32 flex items-center justify-center">
-                <p className="text-gray-400">No blood pressure readings yet</p>
-              </div>
-            )}
+             {summary?.bp.latest ? (
+               <div className="space-y-3">
+                 <p className="text-4xl font-bold text-gray-800">
+                   {summary.bp.latest.systolic}/{summary.bp.latest.diastolic}
+                   <span className="text-lg font-normal text-gray-500 ml-1">mmHg</span>
+                 </p>
+                 {renderBPChart()}
+                 <div className="flex items-center gap-4 text-xs">
+                   <span className="flex items-center gap-1">
+                     <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                     Systolic
+                   </span>
+                   <span className="flex items-center gap-1">
+                     <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                     Diastolic
+                   </span>
+                 </div>
+                 <p className="text-xs text-gray-400">
+                   Average BP: {formatDate(summary.bp.latest.timestamp)}
+                 </p>
+               </div>
+             ) : (
+               <div className="h-32 flex items-center justify-center">
+                 <p className="text-gray-400">No blood pressure readings yet</p>
+               </div>
+             )}
           </CardContent>
         </Card>
       </div>

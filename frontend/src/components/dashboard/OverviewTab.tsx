@@ -178,7 +178,7 @@ const OverviewTab = ({ onNavigate }: OverviewTabProps) => {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-800">Recent Analyses</h2>
             <button 
-              onClick={() => onNavigate?.('insights')}
+              onClick={() => onNavigate?.('documents')}
               className="text-sm text-blue-600 hover:text-blue-700"
             >
               View All →
