@@ -196,7 +196,7 @@ async def telegram_webhook(update: dict):
                 bot = Bot(token=update["message"]["chat"]["id"])
                 await bot.send_message(
                     chat_id=chat_id,
-                    text="✅ Successfully connected to MediTrack! You can now log your health readings."
+                    text="✅ Successfully connected to HealthSync! You can now log your health readings."
                 )
     
     # Process the update

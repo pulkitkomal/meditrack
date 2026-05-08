@@ -524,7 +524,7 @@ async def chat_with_medical_advisor(db, user_id: str, message: str) -> dict:
         context = "No medical documents have been uploaded yet."
     
     # Build the prompt with user profile
-    system_prompt = f"""You are MediTrack, a helpful medical health assistant. The user has uploaded medical documents and may ask questions about their health data.
+    system_prompt = f"""You are HealthSync, a helpful medical health assistant. The user has uploaded medical documents and may ask questions about their health data.
 
 IMPORTANT RULES:
 1. You are NOT a doctor - always recommend consulting a healthcare professional for medical decisions

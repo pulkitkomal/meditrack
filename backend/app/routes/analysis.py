@@ -125,7 +125,7 @@ async def process_queue(max_tasks: int = 5):
     
     try:
         db = app.mongo_db
-        if db:
+        if db is not None:
             processed = await process_all_pending(db, max_tasks=max_tasks)
             logger.info(f"[ANALYSIS-ROUTE] Processed {processed} tasks")
             return {"message": f"Processed {processed} tasks"}
@@ -252,7 +252,8 @@ async def get_analysis(doc_id: str, token: str = Depends(oauth2_scheme), db=Depe
     doc = await db.documents.find_one({"_id": ObjectId(doc_id)})
     if doc and doc.get("file_path"):
         analysis["file_path"] = str(doc["file_path"])
-        analysis["file_type"] = doc.get("file_type", "")
+        analysis["mime_type"] = doc.get("mime_type", "")
+        analysis["storage_type"] = doc.get("storage_type", "local")
     
     logger.info(f"[ANALYSIS-ROUTE] Analysis found - category: {analysis.get('category')}, date: {analysis.get('analysis_date')}")
     logger.info(f"[ANALYSIS-ROUTE] Returning analysis with keys: {list(analysis.keys())}")

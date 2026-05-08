@@ -102,3 +102,20 @@ async def get_file_stream(s3_key: str):
     except Exception as e:
         logger.warning(f"[STORAGE] Failed to get file from S3: {e}")
         return None
+
+async def download_s3_file(s3_key: str, local_path: str = None):
+    """Download S3 file to local temp path"""
+    import tempfile
+    s3 = get_s3_client()
+    if not s3:
+        return None
+    try:
+        if local_path is None:
+            fd, local_path = tempfile.mkstemp(suffix=Path(s3_key).suffix)
+            os.close(fd)
+        s3.download_file(settings.AWS_S3_BUCKET, s3_key, local_path)
+        logger.info(f"[STORAGE] Downloaded S3 file to {local_path}")
+        return local_path
+    except Exception as e:
+        logger.warning(f"[STORAGE] Failed to download S3 file: {e}")
+        return None

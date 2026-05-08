@@ -80,7 +80,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
             WebkitBackgroundClip: "text", 
             WebkitTextFillColor: "transparent",
             marginBottom: "4px"
-          }}>MediTrack</h1>
+          }}>HealthSync</h1>
           <p style={{ color: "#6b7280", fontSize: "15px" }}>Personal Health Records</p>
         </div>
         
@@ -96,7 +96,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
             Create Account
           </h2>
           <p style={{ fontSize: "14px", textAlign: "center", color: "#6b7280", marginBottom: "28px" }}>
-            Join MediTrack today
+            Join HealthSync today
           </p>
           
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>

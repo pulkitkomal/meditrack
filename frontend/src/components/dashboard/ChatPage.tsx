@@ -15,7 +15,7 @@ const ChatPage = () => {
     {
       id: "welcome",
       role: "bot",
-      content: "Hello! I'm MediTrack's medical advisor. I can help you understand your health documents, explain test results, and answer general health questions.\n\n⚠️ **Important:** I'm an AI assistant, not a doctor. Always consult a healthcare professional for medical advice.\n\nHow can I help you today?"
+      content: "Hello! I'm HealthSync's medical advisor. I can help you understand your health documents, explain test results, and answer general health questions.\n\n⚠️ **Important:** I'm an AI assistant, not a doctor. Always consult a healthcare professional for medical advice.\n\nHow can I help you today?"
     }
   ]);
   const [input, setInput] = useState("");

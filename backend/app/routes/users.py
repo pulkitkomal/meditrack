@@ -154,4 +154,4 @@ async def generate_telegram_link(token: str = Depends(oauth2_scheme), db=Depends
         except Exception as e:
             logging.warning(f"Could not get bot username: {e}")
     
-    return {"url": f"https://t.me/MediTrackBot?start={link_token}", "expires": expires.isoformat()}
+    return {"url": f"https://t.me/HealthSyncBot?start={link_token}", "expires": expires.isoformat()}

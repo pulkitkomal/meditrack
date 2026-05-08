@@ -308,22 +308,26 @@ const AnalysisPage = () => {
               </CardHeader>
               <CardContent className="pt-6">
                 {analysis.file_path ? (
-                  analysis.file_type?.endsWith('.pdf') || analysis.file_path?.endsWith('.pdf') ? (
-                    <iframe 
-                      src={`/api/documents/file/${docId}?token=${localStorage.getItem('token')}`}
-                      className="w-full h-[600px] rounded-lg border border-gray-200"
-                      title="Original Document"
-                    />
-                  ) : (
-                    <div className="text-center">
-                      <img 
+                  (() => {
+                    const mimeType = analysis.mime_type || analysis.file_type || '';
+                    const isPdf = mimeType === 'application/pdf' || mimeType.endsWith('.pdf');
+                    return isPdf ? (
+                      <iframe 
                         src={`/api/documents/file/${docId}?token=${localStorage.getItem('token')}`}
-                        alt="Original Document"
-                        className="max-w-full h-auto rounded-lg border border-gray-200 mx-auto"
-                        crossOrigin="anonymous"
+                        className="w-full h-[600px] rounded-lg border border-gray-200"
+                        title="Original Document"
                       />
-                    </div>
-                  )
+                    ) : (
+                      <div className="text-center">
+                        <img 
+                          src={`/api/documents/file/${docId}?token=${localStorage.getItem('token')}`}
+                          alt="Original Document"
+                          className="max-w-full h-auto rounded-lg border border-gray-200 mx-auto"
+                          crossOrigin="anonymous"
+                        />
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div className="text-center py-8 text-gray-500">
                     <p>No original document available.</p>

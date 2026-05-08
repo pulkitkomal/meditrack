@@ -57,7 +57,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             
             await update.message.reply_text(
-                "✅ *Successfully connected to MediTrack!*\n\n"
+                "✅ *Successfully connected to HealthSync!*\n\n"
                 "Your Telegram is now linked to your account. You can:\n"
                 "• Send glucose readings (e.g., `150`)\n"
                 "• Send blood pressure (e.g., `120/80`)\n"
@@ -71,7 +71,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
     
     await update.message.reply_text(
-        "🏥 *MediTrack Health Bot*\n\n"
+        "🏥 *HealthSync Health Bot*\n\n"
         "Welcome! I'll help you track your glucose and blood pressure readings.\n\n"
         "📝 *How to use:*\n"
         "• Send text like `150` for glucose (mg/dL)\n"
@@ -109,7 +109,7 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     user = await db.users.find_one({"telegram_chat_id": str(chat_id)})
     if not user:
-        await update.message.reply_text("❌ Your Telegram is not linked to MediTrack. Please connect from the Profile page.")
+        await update.message.reply_text("❌ Your Telegram is not linked to HealthSync. Please connect from the Profile page.")
         return
     
     # Get latest readings
@@ -149,7 +149,7 @@ async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         {"$set": {"telegram_enabled": False, "notification_times": []}}
     )
     
-    await update.message.reply_text("✅ Notifications disabled. You can re-enable them from the MediTrack Profile page.")
+    await update.message.reply_text("✅ Notifications disabled. You can re-enable them from the HealthSync Profile page.")
 
 async def settings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /settings command"""
@@ -160,7 +160,7 @@ async def settings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     user = await db.users.find_one({"telegram_chat_id": str(chat_id)})
     if not user:
-        await update.message.reply_text("❌ Your Telegram is not linked to MediTrack.")
+        await update.message.reply_text("❌ Your Telegram is not linked to HealthSync.")
         return
     
     tracking = user.get("tracking_types", [])
@@ -173,7 +173,7 @@ async def settings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg += f"Reminders: {len(times)} times daily\n"
     if times:
         msg += f"Times: {', '.join(times)}\n"
-    msg += "\n📱 To change settings, visit the MediTrack Profile page."
+    msg += "\n📱 To change settings, visit the HealthSync Profile page."
     
     await update.message.reply_text(msg, parse_mode="Markdown")
 
@@ -235,7 +235,7 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     user = await db.users.find_one({"telegram_chat_id": str(chat_id)})
     if not user:
-        await update.message.reply_text("❌ Your Telegram is not linked to MediTrack.")
+        await update.message.reply_text("❌ Your Telegram is not linked to HealthSync.")
         return
     
     # Parse the value
@@ -280,7 +280,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     user = await db.users.find_one({"telegram_chat_id": str(chat_id)})
     if not user:
-        await update.message.reply_text("❌ Your Telegram is not linked to MediTrack.")
+        await update.message.reply_text("❌ Your Telegram is not linked to HealthSync.")
         return
     
     await update.message.reply_text("📸 Processing image...")

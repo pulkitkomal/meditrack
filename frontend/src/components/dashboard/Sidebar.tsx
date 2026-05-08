@@ -51,7 +51,7 @@ const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProps) => {
           </div>
           <div>
             <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              MediTrack
+              HealthSync
             </span>
             <p className="text-xs text-gray-400">Personal Health Records</p>
           </div>
@@ -85,7 +85,7 @@ const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProps) => {
 
         {/* User section - Mobile only */}
         <div className="md:hidden border-t border-gray-200 p-4">
-          <p className="text-xs text-gray-500">MediTrack - Personal Health Records</p>
+          <p className="text-xs text-gray-500">HealthSync - Personal Health Records</p>
         </div>
       </div>
     </>

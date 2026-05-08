@@ -7,10 +7,229 @@ interface LoginFormProps {
   setUser: (user: User) => void;
 }
 
+const TERMS_CONTENT = `Terms and Conditions
+
+Effective Date: May 8, 2026
+
+1. Acceptance of Terms
+
+By accessing and using HealthSync ("the Service"), you agree to be bound by these Terms and Conditions. If you do not agree to these terms, please do not use our Service.
+
+2. Description of Service
+
+HealthSync provides a platform for managing personal health records with the following features:
+- Upload and storage of medical documents (PDF, JPG, PNG)
+- AI-powered analysis of medical documents
+- Telegram bot integration for tracking blood glucose and blood pressure readings
+- Health insights and trend analysis
+- Medical advisor chatbot for general health information
+
+3. User Accounts
+
+- You must provide accurate information when creating an account
+- You are responsible for maintaining the confidentiality of your login credentials
+- You must be at least 18 years old to use this Service
+- You are solely responsible for all activities under your account
+
+4. Medical Document Storage
+
+- HealthSync stores your medical documents securely using AWS S3 cloud storage
+- Documents are encrypted and protected using industry-standard security measures
+- You retain full ownership of all documents you upload
+- We do not share your documents with third parties without your explicit consent
+
+5. AI Health Advisor
+
+- The AI-powered medical advisor provides general health information only
+- This Service does NOT provide medical diagnoses, treatment recommendations, or professional medical advice
+- Always consult a qualified healthcare professional for medical decisions
+- HealthSync and its creators are not liable for any decisions made based on AI responses
+
+6. Telegram Bot Usage
+
+- When connecting Telegram, you authorize HealthSync to receive and process messages
+- You can log blood glucose readings (e.g., "150") and blood pressure (e.g., "120/80")
+- Photo submissions are analyzed for meter readings
+- Reminder settings are stored for your convenience
+
+7. Data Storage and Security
+
+- Your data is stored on MongoDB database services
+- Files are stored using AWS S3 with encryption
+- We implement appropriate technical and organizational measures to protect your data
+- You can request deletion of your data at any time
+
+8. User Responsibilities
+
+You agree to:
+- Not use the Service for any illegal purposes
+- Not upload malicious files or content
+- Not attempt to gain unauthorized access to other accounts or systems
+- Comply with all applicable laws and regulations
+- Provide accurate and truthful information
+
+9. Limitation of Liability
+
+HealthSync is provided "as is" without warranties of any kind. We are not liable for:
+- Any damages arising from the use of the Service
+- Any inaccuracies in AI-generated health information
+- Any loss of data (though we take reasonable precautions)
+- Decisions made based on the Service's outputs
+
+10. Termination
+
+- We reserve the right to terminate accounts that violate these terms
+- You may delete your account and request data removal at any time
+- Upon termination, we will remove your data within 30 days
+
+11. Changes to Terms
+
+We may update these terms periodically. Changes will be effective upon posting on the Service. Continued use constitutes acceptance of updated terms.
+
+12. Governing Law
+
+These terms are governed by applicable laws. Any disputes shall be resolved through appropriate legal channels.
+
+Contact: For questions about these terms, please contact support through the application.`;
+
+const PRIVACY_CONTENT = `Privacy Policy
+
+Effective Date: May 8, 2026
+
+1. Information We Collect
+
+Personal Information:
+- Name and email address (provided during registration)
+- Profile information (age, gender, blood type, medical conditions, allergies)
+- Health readings data (blood glucose, blood pressure)
+- Telegram chat ID (if connected)
+
+Medical Documents:
+- Uploaded files (PDF, images)
+- Document metadata (upload date, category)
+- AI analysis results
+
+2. How We Use Your Information
+
+We use collected information to:
+- Provide and maintain the Service
+- Process and analyze uploaded medical documents
+- Generate health insights and trends
+- Send reminders (if Telegram is connected)
+- Improve our AI models and service quality
+- Communicate important updates
+
+3. Data Storage
+
+Your data is stored using:
+- MongoDB: User accounts, health readings, analysis history
+- AWS S3: Medical documents and files (encrypted)
+
+All medical data is encrypted at rest and in transit.
+
+4. Third-Party Services
+
+We use the following third-party services:
+- OpenAI: For AI document analysis and chatbot functionality
+- Telegram: For the health tracking bot (if you choose to connect)
+
+These services have their own privacy policies. We encourage you to review them.
+
+5. Data Security
+
+We implement security measures including:
+- SSL/TLS encryption for all data transmission
+- Encrypted storage for documents on AWS S3
+- Secure authentication using JWT tokens
+- Regular security assessments
+
+6. Your Rights
+
+You have the right to:
+- Access your personal data
+- Request correction of inaccurate data
+- Request deletion of your account and all associated data
+- Export your data in a portable format
+- Withdraw consent for Telegram integration
+
+7. Data Retention
+
+- Account data is retained while your account is active
+- Medical documents are retained as long as you wish to keep them
+- Upon account deletion, all data is removed within 30 days
+- Health readings history can be deleted on request
+
+8. Cookies
+
+We use minimal cookies for:
+- Authentication (session management)
+- Remembering your preferences
+
+No tracking or advertising cookies are used.
+
+9. Children's Privacy
+
+Our Service is not intended for users under 18 years of age. We do not knowingly collect information from minors.
+
+10. Data Sharing
+
+We do NOT:
+- Sell your personal information
+- Share medical documents with third parties
+- Use your data for advertising purposes
+
+We may share aggregated, non-identifiable data for service improvement.
+
+11. Contact Information
+
+For privacy-related concerns or data requests:
+- Use the in-app support feature
+- Contact us through the application
+
+We will respond to requests within 30 days.
+
+12. Data Breach Notification
+
+In the event of a data breach that affects your personal information, we will notify you within 72 hours of discovery.`;
+
+const TermsModal = ({ onClose }: { onClose: () => void }) => (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
+      <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-500 to-purple-600">
+        <h2 className="text-xl font-bold text-white">Terms & Conditions</h2>
+        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full text-white">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div className="p-6 overflow-y-auto max-h-[60vh]">
+        <pre className="text-gray-700 text-sm whitespace-pre-wrap font-sans leading-relaxed">{TERMS_CONTENT}</pre>
+      </div>
+    </div>
+  </div>
+);
+
+const PrivacyModal = ({ onClose }: { onClose: () => void }) => (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
+      <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-500 to-purple-600">
+        <h2 className="text-xl font-bold text-white">Privacy Policy</h2>
+        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full text-white">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div className="p-6 overflow-y-auto max-h-[60vh]">
+        <pre className="text-gray-700 text-sm whitespace-pre-wrap font-sans leading-relaxed">{PRIVACY_CONTENT}</pre>
+      </div>
+    </div>
+  </div>
+);
+
 const LoginForm = ({ setUser }: LoginFormProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,6 +247,9 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
 
   return (
     <div className="min-h-screen flex">
+      {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
+      {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
+
       {/* Left Side - Graphics */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 relative overflow-hidden">
         <div className="absolute inset-0">
@@ -41,7 +263,7 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </div>
-          <h2 className="text-4xl font-bold mb-4 text-center">MediTrack</h2>
+          <h2 className="text-4xl font-bold mb-4 text-center">HealthSync</h2>
           <p className="text-xl text-white/80 text-center max-w-md mb-8">Your personal health companion for managing medical records intelligently</p>
           <div className="flex gap-6">
             <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full">
@@ -72,7 +294,7 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">MediTrack</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">HealthSync</h1>
             <p className="text-gray-500 mt-1">Personal Health Records</p>
           </div>
           
@@ -127,6 +349,16 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
             
             <div className="mt-6 text-center">
               <p className="text-gray-500">Don't have an account? <Link to="/register" className="text-blue-600 font-semibold hover:underline">Create Account</Link></p>
+            </div>
+
+            {/* Footer inside form card */}
+            <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+              <p className="text-sm text-gray-500">© {new Date().getFullYear()} HealthSync. All rights reserved.</p>
+              <div className="flex justify-center gap-4 mt-2 text-sm">
+                <button onClick={() => setShowTerms(true)} className="text-gray-500 hover:text-blue-600 transition-colors">Terms & Conditions</button>
+                <span className="text-gray-300">|</span>
+                <button onClick={() => setShowPrivacy(true)} className="text-gray-500 hover:text-blue-600 transition-colors">Privacy Policy</button>
+              </div>
             </div>
           </div>
         </div>

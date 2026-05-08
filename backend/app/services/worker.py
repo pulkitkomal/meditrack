@@ -4,7 +4,7 @@ from app.services.task_queue import (
     create_analysis_task, get_pending_tasks, update_task_status, get_task_status, delete_user_tasks
 )
 from app.services.analysis import analyze_document, save_analysis_result
-from app.services.storage import get_file_path
+from app.services.storage import get_file_path, download_s3_file
 
 logger = logging.getLogger("medical-records-app")
 
@@ -20,12 +20,29 @@ async def process_task(db, task: dict):
     await update_task_status(db, task_id, "processing")
     
     try:
-        file_path = await get_file_path(document_id, user_id, db)
+        from bson import ObjectId
+        doc = await db.documents.find_one({"_id": ObjectId(document_id)})
+        
+        if not doc:
+            logger.error(f"[WORKER] Document not found: {document_id}")
+            await update_task_status(db, task_id, "failed", error="Document not found")
+            return False
+        
+        file_path = doc.get("file_path")
+        storage_type = doc.get("storage_type", "local")
         
         if not file_path:
-            logger.error(f"[WORKER] File not found for document {document_id}")
-            await update_task_status(db, task_id, "failed", error="File not found")
+            logger.error(f"[WORKER] File path not found for document {document_id}")
+            await update_task_status(db, task_id, "failed", error="File path not found")
             return False
+        
+        if storage_type == "s3":
+            local_path = await download_s3_file(file_path)
+            if not local_path:
+                logger.error(f"[WORKER] Failed to download S3 file: {file_path}")
+                await update_task_status(db, task_id, "failed", error="Failed to download file from S3")
+                return False
+            file_path = local_path
         
         analysis_data = await analyze_document(str(file_path), category, user_id, document_id, db)
         

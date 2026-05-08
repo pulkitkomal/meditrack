@@ -1,4 +1,4 @@
-# MediTrack - Personal Health Records App
+# HealthSync - Personal Health Records App
 
 A full-stack health records management application with Telegram bot integration for tracking blood glucose and blood pressure readings.
 

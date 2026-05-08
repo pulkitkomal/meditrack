@@ -1,14 +1,4 @@
 services:
-  mongo:
-    image: mongo:6
-    container_name: medical-mongo
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-    environment:
-      MONGO_INITDB_DATABASE: medical_records
-
   backend:
     build: ./backend
     container_name: medical-backend
@@ -16,10 +6,9 @@ services:
       - "8000:8000"
     volumes:
       - uploads_data:/app/uploads
-    depends_on:
-      - mongo
     env_file:
       - .env
+    restart: unless-stopped
 
   frontend:
     build: ./frontend
@@ -30,7 +19,7 @@ services:
       - backend
     env_file:
       - .env
+    restart: unless-stopped
 
 volumes:
-  mongo_data:
   uploads_data:
