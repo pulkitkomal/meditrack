@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,16 +7,145 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 215.4 16.3% 46.9%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --card-foreground: 215.4 16.3% 46.9%;
+    --primary: 175 70% 27%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 98%;
+    --secondary-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 56.5%;
+    --accent: 175 70% 27%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    --ring: 175 70% 27%;
+    --radius: 1rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-white text-slate-600 antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-slate-800 font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .card-premium {
+    @apply bg-white rounded-2xl p-4 md:p-5 shadow-card hover:shadow-card-hover transition-all duration-300 w-full;
+  }
+
+  .card-premium-subtle {
+    @apply bg-slate-50 rounded-2xl p-5 shadow-sm;
+  }
+
+  .btn-primary {
+    @apply bg-teal-600 hover:bg-teal-700 text-white font-medium px-5 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow;
+  }
+
+  .btn-secondary {
+    @apply bg-white hover:bg-slate-50 text-slate-700 font-medium px-5 py-2.5 rounded-xl border border-slate-200 transition-all duration-200 active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-slate-100 text-slate-600 font-medium px-4 py-2 rounded-lg transition-all duration-200;
+  }
+
+  .chip {
+    @apply inline-flex items-center px-3.5 py-1.5 rounded-full text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer;
+  }
+
+  .chip-active {
+    @apply bg-teal-50 text-teal-700 hover:bg-teal-100;
+  }
+
+  .input-premium {
+    @apply w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all;
+  }
+
+  .section-title {
+    @apply text-xl font-semibold text-slate-800 mb-4;
+  }
+
+  .section-subtitle {
+    @apply text-sm text-slate-500 mb-4;
+  }
+
+  .stat-card {
+    @apply card-premium flex flex-col;
+  }
+
+  .stat-value {
+    @apply text-3xl font-bold text-slate-800;
+  }
+
+  .stat-label {
+    @apply text-sm text-slate-500 mt-1;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all duration-200;
+  }
+
+  .nav-item-active {
+    @apply bg-teal-50 text-teal-700 hover:bg-teal-50 hover:text-teal-700;
+  }
+
+  .divider {
+    @apply h-px bg-slate-200 my-4;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply bg-emerald-50 text-emerald-700;
+  }
+
+  .badge-warning {
+    @apply bg-amber-50 text-amber-700;
+  }
+
+  .badge-error {
+    @apply bg-red-50 text-red-700;
+  }
+
+  .skeleton {
+    @apply bg-slate-100 rounded-lg animate-shimmer bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 bg-[length:200%_100%];
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

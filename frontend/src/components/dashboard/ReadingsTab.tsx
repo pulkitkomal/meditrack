@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { telegramService } from "../../services/api";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 interface Reading {
   id: string;
@@ -17,12 +16,99 @@ interface Summary {
   glucose: {
     latest: { value: number; unit: string; timestamp: string } | null;
     count: number;
+    avg?: number;
   };
   bp: {
     latest: { systolic: number; diastolic: number; timestamp: string } | null;
     count: number;
+    avg_sys?: number;
+    avg_dia?: number;
   };
 }
+
+const VitalsCard = ({ title, icon, color, children }: { title: string; icon: string; color: string; children: React.ReactNode }) => (
+  <div className="card-premium">
+    <div className="flex items-center gap-3 mb-4">
+      <div className={`w-10 h-10 ${color} rounded-xl flex items-center justify-center`}>
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={icon} />
+        </svg>
+      </div>
+      <h3 className="font-semibold text-slate-800">{title}</h3>
+    </div>
+    {children}
+  </div>
+);
+
+const SimpleChart = ({ data, color, height = 80 }: { data: number[]; color: string; height?: number }) => {
+  if (data.length === 0) return null;
+  
+  const min = Math.min(...data) - 10;
+  const max = Math.max(...data) + 10;
+  const range = max - min || 1;
+  const width = 100;
+  const step = data.length > 1 ? width / (data.length - 1) : 0;
+  
+  const points = data.map((v, i) => `${i * step},${height - ((v - min) / range) * height}`).join(" ");
+  
+  if (data.length === 1) {
+    const y = height - ((data[0] - min) / range) * height;
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-20" preserveAspectRatio="none">
+        <circle cx={width / 2} cy={y} r="4" fill={color} />
+      </svg>
+    );
+  }
+  
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-20" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={`gradient-${color}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polyline points={points} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polygon points={`0,${height} ${points} ${width},${height}`} fill={`url(#gradient-${color})`} />
+    </svg>
+  );
+};
+
+const formatDate = (timestamp: string | null) => {
+  if (!timestamp) return "No data";
+  const date = new Date(timestamp);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+
+const getGlucoseStatus = (value: number) => {
+  if (value < 70) return { label: "Low", color: "text-red-500", bg: "bg-red-50" };
+  if (value <= 100) return { label: "Normal", color: "text-emerald-500", bg: "bg-emerald-50" };
+  if (value <= 125) return { label: "Elevated", color: "text-amber-500", bg: "bg-amber-50" };
+  return { label: "High", color: "text-red-500", bg: "bg-red-50" };
+};
+
+const getBPStatus = (sys: number, dia: number) => {
+  if (sys < 120 && dia < 80) return { label: "Normal", color: "text-emerald-500", bg: "bg-emerald-50" };
+  if (sys < 130 && dia < 80) return { label: "Elevated", color: "text-amber-500", bg: "bg-amber-50" };
+  if (sys < 140 || dia < 90) return { label: "High (Stage 1)", color: "text-orange-500", bg: "bg-orange-50" };
+  return { label: "High (Stage 2)", color: "text-red-500", bg: "bg-red-50" };
+};
+
+const EmptyVitals = ({ type, onConnect }: { type: string; onConnect?: () => void }) => (
+  <div className="text-center py-8">
+    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+      <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    </div>
+    <p className="text-slate-500 mb-2">No {type} readings yet</p>
+    {onConnect && (
+      <button onClick={onConnect} className="text-sm font-medium text-teal-600 hover:text-teal-700">
+        Connect Telegram to start tracking →
+      </button>
+    )}
+  </div>
+);
 
 const ReadingsTab = () => {
   const [loading, setLoading] = useState(true);
@@ -52,234 +138,160 @@ const ReadingsTab = () => {
     }
   };
 
-const formatDate = (timestamp: string | null) => {
-    if (!timestamp) return "N/A";
-    const date = new Date(timestamp);
-    return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-};
-
-  const getStatusColor = (type: string, value: number) => {
-    if (type === "glucose") {
-      if (value < 70) return "text-red-600";
-      if (value <= 100) return "text-green-600";
-      if (value <= 125) return "text-yellow-600";
-      return "text-red-600";
-    }
-    return "text-gray-600";
-  };
-
   const glucoseReadings = readings.filter(r => r.type === "glucose").slice(0, 20).reverse();
   const bpReadings = readings.filter(r => r.type === "bp").slice(0, 20).reverse();
-
-  const renderGlucoseChart = () => {
-    if (glucoseReadings.length === 0) return null;
-    
-    const values = glucoseReadings.map(r => r.value);
-    const min = Math.min(...values) - 20;
-    const max = Math.max(...values) + 20;
-    const range = max - min || 1;
-    const height = 80;
-    const width = 100;
-    const step = glucoseReadings.length > 1 ? width / (values.length - 1) : 0;
-
-    const points = values.map((v, i) => `${i * step},${height - ((v - min) / range) * height}`).join(" ");
-
-    if (glucoseReadings.length === 1) {
-      const val = values[0];
-      const y = height - ((val - min) / range) * height;
-      return (
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-20" preserveAspectRatio="none">
-          <circle cx={width / 2} cy={y} r="4" fill="#8b5cf6" />
-        </svg>
-      );
-    }
-
-    return (
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-20" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="glucoseGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <polyline points={points} fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <polygon points={`0,${height} ${points} ${width},${height}`} fill="url(#glucoseGradient)" />
-      </svg>
-    );
-  };
-
-  const renderBPChart = () => {
-    if (bpReadings.length === 0) return null;
-    
-    const sysValues = bpReadings.map(r => r.systolic || 0);
-    const diaValues = bpReadings.map(r => r.diastolic || 0);
-    const allValues = [...sysValues, ...diaValues];
-    const min = Math.min(...allValues) - 10;
-    const max = Math.max(...allValues) + 10;
-    const range = max - min || 1;
-    const height = 80;
-    const width = 100;
-    const step = bpReadings.length > 1 ? width / (sysValues.length - 1) : 0;
-
-    const sysPoints = sysValues.map((v, i) => `${i * step},${height - ((v - min) / range) * height}`).join(" ");
-    const diaPoints = diaValues.map((v, i) => `${i * step},${height - ((v - min) / range) * height}`).join(" ");
-
-    if (bpReadings.length === 1) {
-      const sysY = height - ((sysValues[0] - min) / range) * height;
-      const diaY = height - ((diaValues[0] - min) / range) * height;
-      return (
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-20" preserveAspectRatio="none">
-          <circle cx={width / 2} cy={sysY} r="4" fill="#f97316" />
-          <circle cx={width / 2} cy={diaY} r="4" fill="#22c55e" />
-        </svg>
-      );
-    }
-
-    return (
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-20" preserveAspectRatio="none">
-        <polyline points={sysPoints} fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <polyline points={diaPoints} fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800">Health Readings</h2>
-      </div>
-
+    <div className="space-y-6 max-w-4xl mx-auto">
       {error && (
-        <div className="p-4 bg-red-50 text-red-600 rounded-lg">{error}</div>
+        <div className="p-4 bg-red-50 text-red-600 rounded-xl">{error}</div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="bg-gradient-to-br from-purple-50 to-white">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-gray-500">Blood Glucose</CardTitle>
-              <span className="text-xs text-gray-400">{summary?.glucose.count || 0} readings</span>
+      {/* Vitals Overview */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <VitalsCard 
+          title="Blood Glucose" 
+          icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+          color="bg-purple-50 text-purple-600"
+        >
+          {summary?.glucose.latest ? (
+            <div>
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="text-4xl font-bold text-slate-800">{summary.glucose.latest.value}</span>
+                <span className="text-lg text-slate-400">{summary.glucose.latest.unit}</span>
+              </div>
+              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${getGlucoseStatus(summary.glucose.latest.value).bg} ${getGlucoseStatus(summary.glucose.latest.value).color}`}>
+                {getGlucoseStatus(summary.glucose.latest.value).label}
+              </span>
+              <SimpleChart data={glucoseReadings.map(r => r.value)} color="#8b5cf6" />
+              <div className="flex items-center justify-between mt-3 text-sm text-slate-500">
+                <span>{summary.glucose.count} readings</span>
+                <span>{formatDate(summary.glucose.latest.timestamp)}</span>
+              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-             {summary?.glucose.latest ? (
-               <div className="space-y-3">
-                 <p className={`text-4xl font-bold ${getStatusColor("glucose", summary.glucose.latest.value)}`}>
-                   {summary.glucose.latest.value}
-                   <span className="text-lg font-normal text-gray-500 ml-1">{summary.glucose.latest.unit}</span>
-                 </p>
-                 {renderGlucoseChart()}
-                 <p className="text-xs text-gray-400">
-                   Average glucose: {formatDate(summary.glucose.latest.timestamp)}
-                 </p>
-               </div>
-             ) : (
-               <div className="h-32 flex items-center justify-center">
-                 <p className="text-gray-400">No glucose readings yet</p>
-               </div>
-             )}
-          </CardContent>
-        </Card>
+          ) : (
+            <EmptyVitals type="glucose" />
+          )}
+        </VitalsCard>
 
-        <Card className="bg-gradient-to-br from-orange-50 to-white">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-gray-500">Blood Pressure</CardTitle>
-              <span className="text-xs text-gray-400">{summary?.bp.count || 0} readings</span>
+        <VitalsCard 
+          title="Blood Pressure" 
+          icon="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+          color="bg-rose-50 text-rose-600"
+        >
+          {summary?.bp.latest ? (
+            <div>
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="text-4xl font-bold text-slate-800">
+                  {summary.bp.latest.systolic}/{summary.bp.latest.diastolic}
+                </span>
+                <span className="text-lg text-slate-400">mmHg</span>
+              </div>
+              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${getBPStatus(summary.bp.latest.systolic, summary.bp.latest.diastolic).bg} ${getBPStatus(summary.bp.latest.systolic, summary.bp.latest.diastolic).color}`}>
+                {getBPStatus(summary.bp.latest.systolic, summary.bp.latest.diastolic).label}
+              </span>
+              <div className="mt-2">
+                <SimpleChart data={bpReadings.map(r => r.systolic || 0)} color="#f97316" />
+              </div>
+              <div className="flex items-center gap-4 mt-2 text-xs">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                  Systolic
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-pink-500"></span>
+                  Diastolic
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-3 text-sm text-slate-500">
+                <span>{summary.bp.count} readings</span>
+                <span>{formatDate(summary.bp.latest.timestamp)}</span>
+              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-             {summary?.bp.latest ? (
-               <div className="space-y-3">
-                 <p className="text-4xl font-bold text-gray-800">
-                   {summary.bp.latest.systolic}/{summary.bp.latest.diastolic}
-                   <span className="text-lg font-normal text-gray-500 ml-1">mmHg</span>
-                 </p>
-                 {renderBPChart()}
-                 <div className="flex items-center gap-4 text-xs">
-                   <span className="flex items-center gap-1">
-                     <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                     Systolic
-                   </span>
-                   <span className="flex items-center gap-1">
-                     <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                     Diastolic
-                   </span>
-                 </div>
-                 <p className="text-xs text-gray-400">
-                   Average BP: {formatDate(summary.bp.latest.timestamp)}
-                 </p>
-               </div>
-             ) : (
-               <div className="h-32 flex items-center justify-center">
-                 <p className="text-gray-400">No blood pressure readings yet</p>
-               </div>
-             )}
-          </CardContent>
-        </Card>
+          ) : (
+            <EmptyVitals type="blood pressure" />
+          )}
+        </VitalsCard>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Readings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {readings.length === 0 ? (
-            <p className="text-gray-400 text-center py-8">No readings found. Connect Telegram to start logging.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Date</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Type</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Value</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Source</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {readings.slice(0, 30).map((reading) => (
-                    <tr key={reading.id} className="border-b border-gray-50 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        {formatDate(reading.timestamp)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reading.type === "glucose" ? "bg-purple-100 text-purple-600" : "bg-orange-100 text-orange-600"
-                        }`}>
-                          {reading.type === "glucose" ? "Glucose" : "Blood Pressure"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        {reading.type === "glucose" ? (
-                          <span className={`font-medium ${getStatusColor("glucose", reading.value)}`}>
-                            {reading.value} {reading.unit}
-                          </span>
-                        ) : (
-                          <span className="font-medium text-gray-800">
-                            {reading.systolic}/{reading.diastolic} mmHg
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-500">
-                        {reading.source}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {/* Recent Readings Table */}
+      <div className="card-premium">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-slate-800">Recent Readings</h3>
+          <span className="text-sm text-slate-400">{readings.length} total</span>
+        </div>
+        
+        {readings.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <p className="text-slate-500">No readings recorded yet</p>
+            <p className="text-sm text-slate-400 mt-1">Connect Telegram to start tracking your vitals</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">Date & Time</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">Type</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">Value</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {readings.slice(0, 15).map((reading) => (
+                  <tr key={reading.id} className="border-b border-slate-50 hover:bg-slate-50">
+                    <td className="py-3 px-4 text-sm text-slate-600">
+                      {formatDate(reading.timestamp)}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        reading.type === "glucose" ? "bg-purple-50 text-purple-600" : "bg-rose-50 text-rose-600"
+                      }`}>
+                        {reading.type === "glucose" ? "Glucose" : "Blood Pressure"}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      {reading.type === "glucose" ? (
+                        <span className={`font-semibold ${getGlucoseStatus(reading.value).color}`}>
+                          {reading.value} {reading.unit}
+                        </span>
+                      ) : (
+                        <span className="font-semibold text-slate-800">
+                          {reading.systolic}/{reading.diastolic} mmHg
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4">
+                      {reading.type === "glucose" ? (
+                        <span className={`text-xs ${getGlucoseStatus(reading.value).color}`}>
+                          {getGlucoseStatus(reading.value).label}
+                        </span>
+                      ) : (
+                        <span className={`text-xs ${getBPStatus(reading.systolic || 0, reading.diastolic || 0).color}`}>
+                          {getBPStatus(reading.systolic || 0, reading.diastolic || 0).label}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

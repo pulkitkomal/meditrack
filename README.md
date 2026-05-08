@@ -27,16 +27,27 @@ A full-stack health records management application with Telegram bot integration
 
 ### Health Dashboard
 - Overview of recent health activities
-- Health score calculation
+- Health score calculation with circular progress visualization
 - Trend visualization for lab values
 - Active conditions tracking
 - Predicted health risks
+- Quick actions for common tasks
 
 ### Profile Management
 - Personal health profile (age, gender, blood type)
 - Medical conditions and allergies tracking
 - Height and weight monitoring
 - Telegram connection management
+- API usage statistics
+
+## Design
+
+The app features a premium, clean design inspired by Apple Health:
+
+- **Clean aesthetic**: White/slate background with teal accents
+- **Mobile-first**: Bottom navigation with responsive layouts
+- **Smooth animations**: Fade-in transitions, hover effects
+- **Premium components**: Rounded cards, soft shadows, modern typography
 
 ## Tech Stack
 
@@ -116,7 +127,7 @@ npm run dev
 
 ## Connecting Telegram
 
-1. Go to the Profile page in the app
+1. Go to the Settings page in the app
 2. Click "Connect Telegram"
 3. Open the generated link in Telegram
 4. Send `/start` to complete the connection
@@ -165,11 +176,6 @@ Once connected, you can:
 - TLS/SSL encryption for data transmission
 - Encrypted storage on AWS S3
 - Secure API endpoints
-
-## Legal
-
-- [Terms & Conditions](/terms)
-- [Privacy Policy](/privacy)
 
 ## License
 
