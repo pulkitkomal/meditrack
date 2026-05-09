@@ -8,15 +8,25 @@ A full-stack health records management application with Telegram bot integration
 
 ### Document Management
 - Upload medical documents (PDF, JPG, PNG)
+- **AI-Powered Title Prediction**: Automatically generates descriptive titles for uploaded documents
 - Secure cloud storage with AWS S3
 - View and download original documents
 - Organize by category (lab reports, prescriptions, radiology, etc.)
+- **Carousel View**: Horizontal scrolling carousel with filter controls, view/analyze/delete actions
 
 ### AI Analysis
 - Automatic extraction of lab values, medications, and diagnoses
 - Smart document summary generation
 - Medical advisor chatbot for health questions
 - Health insights and trend analysis
+
+### Health Dashboard
+- **Key Health Metrics Display**: Shows latest HbA1c, Hemoglobin, Glucose, Creatinine, TSH, and other important lab values
+- **Sophisticated Health Score**: Multi-factor scoring based on specific lab values with different weights (e.g., HbA1c deducts more than cholesterol)
+- Trend analysis for lab values over time
+- User profile conditions factored into health score
+- Active conditions tracking
+- Predicted health risks
 
 ### Telegram Bot Integration
 - Track blood glucose readings (e.g., `150`)
@@ -25,13 +35,11 @@ A full-stack health records management application with Telegram bot integration
 - Set automatic reminders at scheduled times
 - Receive health notifications
 
-### Health Dashboard
-- Overview of recent health activities
-- Health score calculation with circular progress visualization
-- Trend visualization for lab values
-- Active conditions tracking
-- Predicted health risks
-- Quick actions for common tasks
+### Mobile & Tablet
+- Mobile-first design with bottom navigation
+- Optimized tablet view (breakpoint at 1024px)
+- Desktop sidebar navigation for larger screens
+- Touch-friendly carousel with scroll indicators
 
 ### Profile Management
 - Personal health profile (age, gender, blood type)

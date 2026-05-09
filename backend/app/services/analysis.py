@@ -15,6 +15,70 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", settings.OPENAI_API_KEY if h
 # Store the last response usage for tracking
 last_usage = None
 
+async def generate_document_title(file_path: str, category: str) -> Optional[str]:
+    """Generate a predicted title for a document based on its content"""
+    logger.info(f"[ANALYSIS] Generating title for file: {file_path}, category: {category}")
+    
+    if not client.api_key or client.api_key == "your_openai_api_key_here":
+        logger.warning(f"[ANALYSIS] OpenAI API key not configured, cannot generate title")
+        return None
+    
+    try:
+        file_path_str = str(file_path)
+        
+        # Extract text from the document
+        if file_path_str.lower().endswith('.pdf'):
+            text = extract_text_from_pdf(file_path_str)
+        elif file_path_str.lower().endswith(('.jpg', '.jpeg', '.png')):
+            # For images, convert to base64 and use vision
+            images = convert_pdf_to_images(file_path_str)
+            if images:
+                text = f"[Image document - {category}]"
+            else:
+                text = ""
+        else:
+            text = ""
+        
+        if not text:
+            text = f"Document of type: {category}"
+        
+        # Truncate text to keep it manageable
+        text = text[:3000] if len(text) > 3000 else text
+        
+        prompt = f"""Based on the following document content from a {category} document, generate a short, descriptive title (max 60 characters) that summarizes what this document is about.
+
+Example titles:
+- "Blood Test Results - CBC Panel"
+- "Prescription - Metformin 500mg"
+- "Chest X-Ray Report"
+- "COVID-19 Vaccination Record"
+- "Hospital Discharge Summary"
+
+Document content (first 3000 chars):
+{text}
+
+Generate a concise title:"""
+        
+        response = client.chat.completions.create(
+            model=getattr(settings, 'OPENAI_MODEL', 'gpt-4o-mini'),
+            messages=[
+                {"role": "system", "content": "You generate short, descriptive titles for medical documents."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=50
+        )
+        
+        title = response.choices[0].message.content.strip()
+        # Clean up the title - remove quotes if any
+        title = title.strip('"').strip("'")
+        
+        logger.info(f"[ANALYSIS] Generated title: {title}")
+        return title
+        
+    except Exception as e:
+        logger.error(f"[ANALYSIS] Failed to generate title: {e}")
+        return None
+
 def convert_pdf_to_images(file_path: str) -> list:
     logger.info(f"[ANALYSIS] Converting PDF to images: {file_path}")
     try:
@@ -66,12 +130,12 @@ For each lab test, extract:
 Also extract:
 - Patient name and demographics if visible
 - Ordering physician
-- Date of collection and report date
+- Date of collection and report date (MOST IMPORTANT - extract the exact date of the lab report in YYYY-MM-DD format)
 - Any notes or comments from the lab
 - Abnormal findings flagged in the report
 
 Provide as JSON:
-{"lab_values": [{"test": "name", "value": number, "unit": "unit", "reference_range": "range", "status": "normal|high|low|critical"}], "findings": ["abnormal findings"], "summary": "key findings and clinical significance", "medications": [], "diagnoses": [], "recommendations": ["follow-up suggestions"]}""",
+{"document_date": "YYYY-MM-DD", "lab_values": [{"test": "name", "value": number, "unit": "unit", "reference_range": "range", "status": "normal|high|low|critical"}], "findings": ["abnormal findings"], "summary": "key findings and clinical significance", "medications": [], "diagnoses": [], "recommendations": ["follow-up suggestions"]}""",
         
         "prescriptions": """You are a medical AI assistant analyzing a prescription document. Extract ALL medication prescriptions, including current medications, new prescriptions, and refills.
 
@@ -88,12 +152,12 @@ For each medication, extract:
 Also extract:
 - Patient name
 - Prescribing physician
-- Date of prescription
+- Date of prescription (MOST IMPORTANT - extract the exact date in YYYY-MM-DD format)
 - Pharmacy information if present
 - Diagnosis or reason for prescription if noted
 
 Provide as JSON:
-{"medications": [{"name": "name", "dosage": "strength", "frequency": "how often", "duration": "how long", "quantity": "number", "refills": "number"}], "diagnoses": [{"condition": "diagnosis", "icd_code": "code if present"}], "summary": "overview of medications and purpose", "recommendations": []}""",
+{"document_date": "YYYY-MM-DD", "medications": [{"name": "name", "dosage": "strength", "frequency": "how often", "duration": "how long", "quantity": "number", "refills": "number"}], "diagnoses": [{"condition": "diagnosis", "icd_code": "code if present"}], "summary": "overview of medications and purpose", "recommendations": []}""",
         
         "imaging": """You are a medical AI assistant analyzing a medical imaging report (X-ray, MRI, CT scan, ultrasound, mammogram, etc.). 
 
@@ -114,12 +178,12 @@ For each finding, provide:
 Also extract:
 - Patient demographics
 - Ordering physician
-- Date of exam
+- Date of exam (MOST IMPORTANT - extract the exact date in YYYY-MM-DD format)
 - Radiologist name
 - Impression/conclusion section
 
 Provide as JSON:
-{"findings": [{"description": "finding", "significance": "significant or incidental", "recommendation": "follow-up if any"}], "diagnoses": [], "summary": "overall impression and clinical correlation", "recommendations": ["additional studies or follow-up"]}""",
+{"document_date": "YYYY-MM-DD", "findings": [{"description": "finding", "significance": "significant or incidental", "recommendation": "follow-up if any"}], "diagnoses": [], "summary": "overall impression and clinical correlation", "recommendations": ["additional studies or follow-up"]}""",
         
         "vaccination_records": """You are a medical AI assistant analyzing a vaccination/immunization record.
 
@@ -132,12 +196,12 @@ Extract:
 - Vaccine type (influenza, COVID, tetanus, etc.)
 
 Provide as JSON:
-{"vaccinations": [{"vaccine": "name", "date": "YYYY-MM-DD", "lot": "number", "site": "location", "reaction": "any adverse reaction"}], "summary": "vaccination status overview", "recommendations": ["upcoming vaccines due"]}""",
+{"document_date": "YYYY-MM-DD", "vaccinations": [{"vaccine": "name", "date": "YYYY-MM-DD", "lot": "number", "site": "location", "reaction": "any adverse reaction"}], "summary": "vaccination status overview", "recommendations": ["upcoming vaccines due"]}""",
         
         "discharge_summaries": """You are a medical AI assistant analyzing a hospital discharge summary.
 
 Extract:
-- Admission date and reason
+- Admission date and reason (MOST IMPORTANT - extract exact date in YYYY-MM-DD format)
 - Discharge date and disposition
 - Diagnoses (primary and secondary)
 - Procedures performed
@@ -146,21 +210,21 @@ Extract:
 - Patient education provided
 
 Provide as JSON:
-{"diagnoses": [{"condition": "diagnosis", "icd_code": "code", "status": "primary|secondary"}], "procedures": ["list of procedures"], "medications": [{"name": "med", "dosage": "dose"}], "summary": "hospital course summary", "recommendations": ["follow-up instructions"]}""",
+{"document_date": "YYYY-MM-DD", "diagnoses": [{"condition": "diagnosis", "icd_code": "code", "status": "primary|secondary"}], "procedures": ["list of procedures"], "medications": [{"name": "med", "dosage": "dose"}], "summary": "hospital course summary", "recommendations": ["follow-up instructions"]}""",
         
         "insurance_documents": """You are a medical AI assistant analyzing an insurance document (EOB, claim, etc.).
 
 Extract:
 - Provider information
 - Patient information
-- Services rendered with dates
+- Services rendered with dates (MOST IMPORTANT - extract exact date in YYYY-MM-DD format)
 - Billed amounts
 - Covered amounts
 - Patient responsibility
 - Denial codes if any
 
 Provide as JSON:
-{"provider": {"name": "name", "address": "address"}, "services": [{"code": "CPT code", "description": "service", "billed": amount, "covered": amount}], "summary": "claim overview", "recommendations": []}"""
+{"document_date": "YYYY-MM-DD", "provider": {"name": "name", "address": "address"}, "services": [{"code": "CPT code", "description": "service", "billed": amount, "covered": amount}], "summary": "claim overview", "recommendations": []}"""
     }
     return prompts.get(category, prompts["lab_results"])
 
@@ -269,6 +333,23 @@ async def analyze_document(file_path, category: str, user_id: str, document_id: 
     logger.info(f"[ANALYSIS] Analysis data received - summary: {analysis_data.get('summary', 'N/A')[:100]}")
     logger.info(f"[ANALYSIS] Extracted {len(analysis_data.get('lab_values', []))} lab values, {len(analysis_data.get('medications', []))} medications, {len(analysis_data.get('diagnoses', []))} diagnoses")
     
+    # Extract document_date from analysis and update document record
+    document_date_str = analysis_data.get("document_date")
+    if document_date_str and db is not None:
+        try:
+            from datetime import datetime
+            # Try to parse the date (expecting YYYY-MM-DD format from OpenAI)
+            parsed_date = datetime.strptime(document_date_str, "%Y-%m-%d")
+            # Update the document's document_date in MongoDB
+            from bson import ObjectId
+            await db.documents.update_one(
+                {"_id": ObjectId(document_id)},
+                {"$set": {"document_date": parsed_date}}
+            )
+            logger.info(f"[ANALYSIS] Updated document_date to {parsed_date} for document {document_id}")
+        except Exception as e:
+            logger.warning(f"[ANALYSIS] Failed to parse or update document_date: {e}")
+    
     # Log token usage to MongoDB
     global last_usage
     if db is not None and last_usage:
@@ -312,6 +393,7 @@ async def analyze_document(file_path, category: str, user_id: str, document_id: 
         "document_id": document_id,
         "user_id": user_id,
         "analysis_date": datetime.utcnow(),
+        "document_date": document_date_str if document_date_str else None,
         "category": category,
         "extracted_data": analysis_data,
         "chatbot_context": chatbot_context,
@@ -423,7 +505,7 @@ async def build_chatbot_context(db, user_id: str) -> tuple:
             if lab_values:
                 lab_text = f"Lab Results from {doc_info['document_date']}:\n"
                 for lab in lab_values[:20]:  # Limit to 20 to keep context manageable
-                    lab_text += f"  - {lab.get('test', 'Unknown')}: {lab.get('value', 'N/A')} {lab.get('unit', '')} ({lab.get('status', 'unknown').upper()})\n"
+                    lab_text += f"  - {lab.get('test', 'Unknown')}: {lab.get('value', 'N/A')} {lab.get('unit', '')} ({(lab.get('status') or 'unknown').upper()})\n"
                 context_parts.append(lab_text)
             
             # Medications

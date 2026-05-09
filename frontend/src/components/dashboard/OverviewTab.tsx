@@ -7,6 +7,15 @@ interface Summary {
   total_analyses: number;
   predictions: Array<{ condition: string; probability: number; reasoning: string }>;
   latest_analysis_date: string;
+  latest_metrics?: Array<{
+    test: string;
+    display_name: string;
+    value: number;
+    unit: string;
+    status: string;
+    category: string;
+    reference_range: string;
+  }>;
 }
 
 interface Analysis {
@@ -193,15 +202,47 @@ const OverviewTab = ({ onNavigate }: OverviewTabProps) => {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Hero Section - Health Score */}
+      {/* Hero Section - Key Metrics or Health Score */}
       <div className="card-premium">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-center md:text-left">
-            <h2 className="text-lg font-semibold text-slate-800 mb-1">Your Health Score</h2>
-            <p className="text-sm text-slate-500">Based on your latest health data</p>
+        {summary?.latest_metrics && summary.latest_metrics.length > 0 ? (
+          <div>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
+              <div className="text-center md:text-left">
+                <h2 className="text-lg font-semibold text-slate-800 mb-1">Latest Health Metrics</h2>
+                <p className="text-sm text-slate-500">
+                  {summary.latest_analysis_date ? `From ${new Date(summary.latest_analysis_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'Recent lab results'}
+                </p>
+              </div>
+              <HealthScoreCircle score={summary?.health_score || 0} />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {summary.latest_metrics.slice(0, 4).map((metric, idx) => {
+                const statusColors: Record<string, string> = {
+                  normal: 'bg-green-50 text-green-600',
+                  high: 'bg-red-50 text-red-600',
+                  low: 'bg-amber-50 text-amber-600',
+                  critical: 'bg-red-100 text-red-700'
+                };
+                return (
+                  <div key={idx} className={`p-3 rounded-lg ${statusColors[metric.status] || statusColors.normal}`}>
+                    <p className="text-xs text-slate-500">{metric.display_name}</p>
+                    <p className="text-lg font-bold text-slate-800">
+                      {metric.value} <span className="text-xs font-normal">{metric.unit}</span>
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <HealthScoreCircle score={summary?.health_score || 0} />
-        </div>
+        ) : (
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-center md:text-left">
+              <h2 className="text-lg font-semibold text-slate-800 mb-1">Your Health Score</h2>
+              <p className="text-sm text-slate-500">Based on your latest health data</p>
+            </div>
+            <HealthScoreCircle score={summary?.health_score || 0} />
+          </div>
+        )}
         
         {summary?.active_conditions && summary.active_conditions.length > 0 && (
           <div className="mt-6 pt-6 border-t border-slate-100">
@@ -263,7 +304,7 @@ const OverviewTab = ({ onNavigate }: OverviewTabProps) => {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-slate-800">Recent Analyses</h2>
             <button 
-              onClick={() => onNavigate?.('insights')}
+              onClick={() => onNavigate?.('documents')}
               className="text-sm font-medium text-teal-600 hover:text-teal-700"
             >
               View All →

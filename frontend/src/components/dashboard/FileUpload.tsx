@@ -93,6 +93,7 @@ export const BulkUpload = ({ onUpload }: BulkUploadProps) => {
   const [category, setCategory] = useState("");
   const [uploading, setUploading] = useState(false);
   const [results, setResults] = useState<{ uploaded: number; errors: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -111,27 +112,32 @@ export const BulkUpload = ({ onUpload }: BulkUploadProps) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleUpload = async () => {
-    if (!files.length || !category) return;
-    
-    setUploading(true);
-    setResults(null);
-    
-    try {
-      const res = await documentService.bulkUpload(files, category);
-      setResults({
-        uploaded: res.data.uploaded?.length || 0,
-        errors: res.data.errors?.length || 0
-      });
-      setFiles([]);
-      setCategory("");
-      onUpload();
-    } catch (err) {
-      console.error("Bulk upload failed:", err);
-    } finally {
-      setUploading(false);
-    }
-  };
+    const handleUpload = async () => {
+        if (!files.length || !category) {
+            setError("Please select files and category");
+            return;
+        }
+        
+        setUploading(true);
+        setResults(null);
+        setError(null);
+        
+        try {
+            const res = await documentService.bulkUpload(files, category);
+            setResults({
+                uploaded: res.data.uploaded?.length || 0,
+                errors: res.data.errors?.length || 0
+            });
+            setFiles([]);
+            setCategory("");
+            onUpload();
+        } catch (err: any) {
+            console.error("Bulk upload failed:", err);
+            setError(err.response?.data?.detail || "Bulk upload failed. Please try again.");
+        } finally {
+            setUploading(false);
+        }
+    };
 
   return (
     <div className="space-y-4">
@@ -147,29 +153,36 @@ export const BulkUpload = ({ onUpload }: BulkUploadProps) => {
         </select>
       </div>
       
-      <div
-        onDrop={handleDrop}
-        onDragOver={e => e.preventDefault()}
-        className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-teal-300 hover:bg-teal-50/30 transition-colors cursor-pointer"
-      >
-        <input
-          type="file"
-          multiple
-          accept=".pdf,.jpg,.jpeg,.png"
-          onChange={handleFileSelect}
-          className="hidden"
-          id="bulk-file-select"
-        />
-        <label htmlFor="bulk-file-select" className="cursor-pointer">
-          <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center mx-auto mb-3">
-            <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
-          </div>
-          <p className="text-slate-700 font-medium">Drop files or click to select</p>
-          <p className="text-slate-400 text-sm mt-1">PDF, JPG, PNG up to 20 files</p>
-        </label>
-      </div>
+        <div
+          onDrop={handleDrop}
+          onDragOver={e => e.preventDefault()}
+          className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-teal-300 hover:bg-teal-50/30 transition-colors cursor-pointer"
+        >
+          <input
+            type="file"
+            multiple
+            accept=".pdf,.jpg,.jpeg,.png"
+            onChange={handleFileSelect}
+            className="hidden"
+            id="bulk-file-select"
+          />
+          <label htmlFor="bulk-file-select" className="cursor-pointer">
+            <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+            <p className="text-slate-700 font-medium">Drop files or click to select</p>
+            {error && (
+              <p className="text-sm text-red-600 mt-2">
+                {error}
+              </p>
+            )}
+            <p className="text-slate-500 text-xs mt-2">
+              Max 20 files, 10MB each. Supported: PDF, JPG, JPEG, PNG
+            </p>
+          </label>
+        </div>
       
       {files.length > 0 && (
         <div className="max-h-40 overflow-y-auto space-y-2">

@@ -18,6 +18,14 @@ interface Summary {
   total_analyses: number;
   latest_analysis_date?: string;
   profile: Profile;
+  latest_metrics?: Array<{
+    test: string;
+    display_name: string;
+    value: number;
+    unit: string;
+    status: string;
+    category: string;
+  }>;
 }
 
 interface Trend {
@@ -91,7 +99,38 @@ const InsightsTab = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {summary && (
+        {summary && summary.latest_metrics && summary.latest_metrics.length > 0 ? (
+          <div className="md:col-span-2 lg:col-span-3 card-premium">
+            <h3 className="font-semibold text-slate-800 mb-4">Latest Health Metrics</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {summary.latest_metrics.slice(0, 8).map((metric, idx) => {
+                const statusColors: Record<string, string> = {
+                  normal: "bg-green-50 border-green-200",
+                  high: "bg-red-50 border-red-200",
+                  low: "bg-amber-50 border-amber-200",
+                  critical: "bg-red-100 border-red-300"
+                };
+                const textColors: Record<string, string> = {
+                  normal: "text-green-700",
+                  high: "text-red-700",
+                  low: "text-amber-700",
+                  critical: "text-red-800"
+                };
+                return (
+                  <div key={idx} className={`p-4 rounded-xl border ${statusColors[metric.status] || statusColors.normal}`}>
+                    <p className="text-xs text-slate-500 mb-1">{metric.display_name}</p>
+                    <p className="text-2xl font-bold text-slate-800">
+                      {metric.value} <span className="text-sm font-normal text-slate-500">{metric.unit}</span>
+                    </p>
+                    <span className={`text-xs font-medium ${textColors[metric.status] || textColors.normal}`}>
+                      {metric.status}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : summary && (
           <StatCard title="Health Score">
             <div className="flex items-center gap-4">
               <div className="relative w-20 h-20">
@@ -154,7 +193,7 @@ const InsightsTab = () => {
               {summary.profile.blood_type && (
                 <div className="flex justify-between">
                   <span className="text-slate-500">Blood Type</span>
-                  <span className="font-medium text-slate-800">{summary.profile.blood_type}</span>
+                  <span className="font-medium text-slate-800 uppercase">{summary.profile.blood_type.replace('_', '')}</span>
                 </div>
               )}
               {summary.profile.allergies && summary.profile.allergies.length > 0 && (

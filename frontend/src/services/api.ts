@@ -38,16 +38,12 @@ export const authService = {
 };
 
 export const documentService = {
-  upload: (data: FormData) => api.post("/documents/upload", data, {
-    headers: { "Content-Type": "multipart/form-data" }
-  }),
+  upload: (data: FormData) => api.post("/documents/upload", data),
   bulkUpload: (files: File[], category: string) => {
     const formData = new FormData();
     files.forEach(file => formData.append("files", file));
     formData.append("category", category);
-    return api.post("/documents/bulk-upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" }
-    });
+    return api.post("/documents/bulk-upload", formData);
   },
   list: (params?: { category?: string; date_from?: string; date_to?: string; upload_from?: string; upload_to?: string }) => api.get("/documents/", { params: params || {} })
 };

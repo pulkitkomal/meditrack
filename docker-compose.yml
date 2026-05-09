@@ -21,5 +21,17 @@ services:
       - .env
     restart: unless-stopped
 
+  worker:
+    build: ./backend
+    container_name: medical-worker
+    command: python worker.py
+    volumes:
+      - uploads_data:/app/uploads
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    restart: unless-stopped
+
 volumes:
   uploads_data:

@@ -43,7 +43,38 @@ def compare_lab_values(current_analysis: Dict[str, Any], previous_analyses: List
     logger.info(f"[COMPARISON] Generated {len(trends)} trend entries")
     return trends
 
-def calculate_health_score(analyses: List[Dict[str, Any]]) -> float:
+LAB_WEIGHTS = {
+    # Critical tests - higher weight
+    "hba1c": {"high": 15, "low": 10, "critical": 25, "name": "HbA1c"},
+    "glucose": {"high": 12, "low": 8, "critical": 20, "name": "Blood Glucose"},
+    "fasting glucose": {"high": 12, "low": 8, "critical": 20, "name": "Fasting Glucose"},
+    "creatinine": {"high": 15, "low": 8, "critical": 25, "name": "Creatinine"},
+    "egfr": {"high": 5, "low": 15, "critical": 25, "name": "eGFR"},
+    "bun": {"high": 10, "low": 5, "critical": 15, "name": "BUN"},
+    
+    # Important tests - medium weight
+    "cholesterol": {"high": 8, "low": 3, "critical": 12, "name": "Cholesterol"},
+    "ldl": {"high": 10, "low": 3, "critical": 15, "name": "LDL"},
+    "hdl": {"high": 3, "low": 10, "critical": 15, "name": "HDL"},
+    "triglycerides": {"high": 8, "low": 3, "critical": 12, "name": "Triglycerides"},
+    "tsh": {"high": 8, "low": 8, "critical": 12, "name": "TSH"},
+    "hemoglobin": {"high": 5, "low": 12, "critical": 20, "name": "Hemoglobin"},
+    "hb": {"high": 5, "low": 12, "critical": 20, "name": "Hb"},
+    "sodium": {"high": 8, "low": 10, "critical": 15, "name": "Sodium"},
+    "potassium": {"high": 10, "low": 10, "critical": 15, "name": "Potassium"},
+    
+    # Other tests - lower weight
+    "alt": {"high": 6, "low": 2, "critical": 10, "name": "ALT"},
+    "ast": {"high": 6, "low": 2, "critical": 10, "name": "AST"},
+    "bilirubin": {"high": 5, "low": 2, "critical": 8, "name": "Bilirubin"},
+    "albumin": {"high": 3, "low": 5, "critical": 8, "name": "Albumin"},
+    "wbc": {"high": 4, "low": 5, "critical": 8, "name": "WBC"},
+    "rbc": {"high": 3, "low": 5, "critical": 8, "name": "RBC"},
+    "platelets": {"high": 3, "low": 5, "critical": 8, "name": "Platelets"},
+    "uric acid": {"high": 5, "low": 3, "critical": 8, "name": "Uric Acid"},
+}
+
+def calculate_health_score(analyses: List[Dict[str, Any]], user_conditions: List[str] = None) -> float:
     logger.info(f"[COMPARISON] Calculating health score - number of analyses: {len(analyses)}")
     score = 100.0
     
@@ -51,28 +82,89 @@ def calculate_health_score(analyses: List[Dict[str, Any]]) -> float:
         logger.info(f"[COMPARISON] No analyses available, returning default score: {score}")
         return score
     
-    latest = analyses[0]
-    lab_values = latest.get("extracted_data", {}).get("lab_values", [])
+    # Get lab values from the most recent analysis with data
+    latest_with_labs = None
+    for analysis in analyses:
+        lab_values = analysis.get("extracted_data", {}).get("lab_values", [])
+        if lab_values:
+            latest_with_labs = analysis
+            break
+    
+    if not latest_with_labs:
+        logger.info(f"[COMPARISON] No analysis with lab values found")
+        return score
+    
+    lab_values = latest_with_labs.get("extracted_data", {}).get("lab_values", [])
     logger.info(f"[COMPARISON] Latest analysis has {len(lab_values)} lab values")
     
-    # Deduct for abnormal values
-    abnormal_count = sum(1 for lab in lab_values if lab.get("status") in ["high", "low"])
-    score -= abnormal_count * 5
-    logger.info(f"[COMPARISON] Deducted {abnormal_count * 5} for {abnormal_count} abnormal lab values")
+    # Create lookup for lab values
+    lab_dict = {lab.get("test", "").lower(): lab for lab in lab_values}
     
-    # Deduct for risk factors
-    risk_factors = latest.get("risk_assessment", {}).get("risk_factors", [])
-    score -= len(risk_factors) * 3
-    logger.info(f"[COMPARISON] Deducted {len(risk_factors) * 3} for {len(risk_factors)} risk factors")
+    # Calculate deductions based on specific lab tests
+    total_deduction = 0
+    affected_tests = []
     
-    # Deduct for active conditions
-    diagnoses = latest.get("extracted_data", {}).get("diagnoses", [])
-    active_conditions = [d for d in diagnoses if d.get("status") == "active"]
-    score -= len(active_conditions) * 10
-    logger.info(f"[COMPARISON] Deducted {len(active_conditions) * 10} for {len(active_conditions)} active conditions")
+    for test_name, weights in LAB_WEIGHTS.items():
+        if test_name in lab_dict:
+            lab = lab_dict[test_name]
+            status = lab.get("status", "normal")
+            test_display = lab.get("test", weights.get("name", test_name))
+            
+            if status == "critical":
+                deduction = weights.get("critical", 15)
+                affected_tests.append(f"{test_display} (critical)")
+            elif status == "high":
+                deduction = weights.get("high", 8)
+                affected_tests.append(f"{test_display} (high)")
+            elif status == "low":
+                deduction = weights.get("low", 8)
+                affected_tests.append(f"{test_display} (low)")
+            
+            if deduction:
+                total_deduction += deduction
+                logger.info(f"[COMPARISON] {test_display}: {status}, deduct {deduction}")
+    
+    score -= total_deduction
+    
+    # Check for trends - if multiple recent analyses show worsening, deduct more
+    if len(analyses) >= 2:
+        trend_deduction = 0
+        for test_name in ["hba1c", "glucose", "cholesterol", "creatinine"]:
+            if test_name in lab_dict:
+                current = lab_dict[test_name].get("value", 0)
+                # Check previous analysis
+                prev_labs = analyses[1].get("extracted_data", {}).get("lab_values", [])
+                prev_dict = {l.get("test", "").lower(): l for l in prev_labs}
+                if test_name in prev_dict:
+                    prev_value = prev_dict[test_name].get("value", 0)
+                    if prev_value > 0:
+                        # Worsening trend
+                        if current > prev_value * 1.1:  # 10% increase
+                            trend_deduction += 5
+                            logger.info(f"[COMPARISON] Worsening trend for {test_name}: {prev_value} -> {current}")
+        
+        score -= trend_deduction
+        logger.info(f"[COMPARISON] Trend deduction: {trend_deduction}")
+    
+    # Factor in user conditions if provided
+    if user_conditions and len(user_conditions) > 0:
+        condition_penalty = min(len(user_conditions) * 3, 15)  # Max 15 points
+        score -= condition_penalty
+        logger.info(f"[COMPARISON] Condition penalty: {condition_penalty} for {len(user_conditions)} conditions")
+    
+    # Risk factors
+    risk_factors = latest_with_labs.get("risk_assessment", {}).get("risk_factors", [])
+    score -= len(risk_factors) * 2
+    logger.info(f"[COMPARISON] Risk factor deduction: {len(risk_factors) * 2}")
+    
+    # Active diagnoses
+    diagnoses = latest_with_labs.get("extracted_data", {}).get("diagnoses", [])
+    active_conditions_count = sum(1 for d in diagnoses if d.get("status") == "active")
+    score -= active_conditions_count * 8
+    logger.info(f"[COMPARISON] Active conditions deduction: {active_conditions_count * 8}")
     
     final_score = max(0, min(100, score))
-    logger.info(f"[COMPARISON] Final health score: {final_score}")
+    logger.info(f"[COMPARISON] Final health score: {final_score}, affected tests: {affected_tests[:5]}")
     return final_score
 
 def get_active_conditions(analyses: List[Dict[str, Any]]) -> List[str]:
@@ -126,3 +218,116 @@ def predict_conditions(analyses: List[Dict[str, Any]]) -> List[Dict]:
     
     logger.info(f"[COMPARISON] Total predictions: {len(predictions)}")
     return predictions
+
+KEY_METRICS_MAPPING = {
+    # HbA1c variations
+    "hba1c": {"display_name": "HbA1c", "category": "Diabetes", "priority": 1},
+    "glycosylated hb": {"display_name": "HbA1c", "category": "Diabetes", "priority": 1},
+    "glycosylated hemoglobin": {"display_name": "HbA1c", "category": "Diabetes", "priority": 1},
+    "hba1c (gmi)": {"display_name": "HbA1c", "category": "Diabetes", "priority": 1},
+    
+    # Hemoglobin variations
+    "hemoglobin": {"display_name": "Hemoglobin", "category": "Blood", "priority": 1},
+    "hb": {"display_name": "Hemoglobin", "category": "Blood", "priority": 1},
+    "hb-hemoglobin": {"display_name": "Hemoglobin", "category": "Blood", "priority": 1},
+    
+    # Glucose
+    "glucose": {"display_name": "Glucose", "category": "Diabetes", "priority": 1},
+    "fasting glucose": {"display_name": "Fasting Glucose", "category": "Diabetes", "priority": 1},
+    "blood glucose": {"display_name": "Blood Glucose", "category": "Diabetes", "priority": 1},
+    "random blood sugar": {"display_name": "Blood Sugar", "category": "Diabetes", "priority": 1},
+    "rbs": {"display_name": "Blood Sugar", "category": "Diabetes", "priority": 1},
+    
+    # Kidney
+    "creatinine": {"display_name": "Creatinine", "category": "Kidney", "priority": 1},
+    "gfr estimated": {"display_name": "eGFR", "category": "Kidney", "priority": 1},
+    "gfr": {"display_name": "eGFR", "category": "Kidney", "priority": 1},
+    "urea": {"display_name": "Urea", "category": "Kidney", "priority": 2},
+    "urea nitrogen blood": {"display_name": "BUN", "category": "Kidney", "priority": 2},
+    "bun": {"display_name": "BUN", "category": "Kidney", "priority": 2},
+    
+    # Thyroid
+    "tsh": {"display_name": "TSH", "category": "Thyroid", "priority": 1},
+    "thyroxine": {"display_name": "T4", "category": "Thyroid", "priority": 2},
+    "t4": {"display_name": "T4", "category": "Thyroid", "priority": 2},
+    "triiodothyronine": {"display_name": "T3", "category": "Thyroid", "priority": 2},
+    "t3": {"display_name": "T3", "category": "Thyroid", "priority": 2},
+    
+    # Cholesterol
+    "cholesterol": {"display_name": "Cholesterol", "category": "Heart", "priority": 1},
+    "total cholesterol": {"display_name": "Cholesterol", "category": "Heart", "priority": 1},
+    "ldl": {"display_name": "LDL", "category": "Heart", "priority": 1},
+    "hdl": {"display_name": "HDL", "category": "Heart", "priority": 1},
+    "triglycerides": {"display_name": "Triglycerides", "category": "Heart", "priority": 2},
+    
+    # Other
+    "uric acid": {"display_name": "Uric Acid", "category": "Metabolism", "priority": 2},
+    "bilirubin": {"display_name": "Bilirubin", "category": "Liver", "priority": 2},
+    "albumin": {"display_name": "Albumin", "category": "Liver", "priority": 2},
+    "alt": {"display_name": "ALT", "category": "Liver", "priority": 2},
+    "alt (sgpt)": {"display_name": "ALT", "category": "Liver", "priority": 2},
+    "ast": {"display_name": "AST", "category": "Liver", "priority": 2},
+    "ast (sgot)": {"display_name": "AST", "category": "Liver", "priority": 2},
+    "wbc": {"display_name": "WBC", "category": "Blood", "priority": 2},
+    "total leukocyte count": {"display_name": "WBC", "category": "Blood", "priority": 2},
+    "rbc count": {"display_name": "RBC", "category": "Blood", "priority": 2},
+    "rbc": {"display_name": "RBC", "category": "Blood", "priority": 2},
+    "platelet count": {"display_name": "Platelets", "category": "Blood", "priority": 2},
+    "platelets": {"display_name": "Platelets", "category": "Blood", "priority": 2},
+    "electrolytes (na)": {"display_name": "Sodium", "category": "Electrolytes", "priority": 2},
+    "sodium": {"display_name": "Sodium", "category": "Electrolytes", "priority": 2},
+    "electrolytes (k)": {"display_name": "Potassium", "category": "Electrolytes", "priority": 2},
+    "potassium": {"display_name": "Potassium", "category": "Electrolytes", "priority": 2},
+    "ferritin": {"display_name": "Ferritin", "category": "Blood", "priority": 2},
+    "iron": {"display_name": "Iron", "category": "Blood", "priority": 2},
+    "calcium": {"display_name": "Calcium", "category": "Minerals", "priority": 2},
+    "phosphorus": {"display_name": "Phosphorus", "category": "Minerals", "priority": 2},
+}
+
+def get_latest_key_metrics(analyses: List[Dict[str, Any]]) -> List[Dict]:
+    logger.info(f"[COMPARISON] Extracting key metrics from {len(analyses)} analyses")
+    metrics = []
+    
+    if not analyses:
+        return metrics
+    
+    # Find the latest analysis that has lab values
+    analysis_with_labs = None
+    for analysis in analyses:
+        lab_values = analysis.get("extracted_data", {}).get("lab_values", [])
+        if lab_values and len(lab_values) >= 2:
+            # Check if it has any numeric values that might match our metrics
+            analysis_with_labs = analysis
+            logger.info(f"[COMPARISON] Found analysis with {len(lab_values)} lab values")
+            break
+    
+    if not analysis_with_labs:
+        logger.info(f"[COMPARISON] No suitable analysis with lab values found")
+        return metrics
+    
+    latest = analysis_with_labs
+    lab_values = latest.get("extracted_data", {}).get("lab_values", [])
+    
+    lab_dict = {}
+    for lab in lab_values:
+        test_name_lower = lab.get("test", "").lower().strip()
+        lab_dict[test_name_lower] = lab
+    
+    for test_lower, mapping in KEY_METRICS_MAPPING.items():
+        if test_lower in lab_dict:
+            lab = lab_dict[test_lower]
+            metrics.append({
+                "test": lab.get("test", mapping["display_name"]),
+                "display_name": mapping["display_name"],
+                "value": lab.get("value"),
+                "unit": lab.get("unit", ""),
+                "status": lab.get("status", "normal"),
+                "category": mapping["category"],
+                "priority": mapping["priority"],
+                "reference_range": lab.get("reference_range", ""),
+                "analysis_date": latest.get("analysis_date")
+            })
+    
+    metrics.sort(key=lambda x: (x["priority"], x["category"]))
+    logger.info(f"[COMPARISON] Found {len(metrics)} key metrics")
+    return metrics

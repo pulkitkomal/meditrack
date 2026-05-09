@@ -8,12 +8,15 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     UPLOAD_DIR: str
     BACKEND_PORT: int = 8000
+    FRONTEND_PORT: int = 6363
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
     AWS_S3_BUCKET: str = ""
     AWS_REGION: str = "us-east-1"
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
+    TELEGRAM_BOT_TOKEN: str = ""
+    USE_OPENAI_VISION: bool = True
 
     class Config:
         env_file = Path(__file__).parent.parent.parent / ".env"

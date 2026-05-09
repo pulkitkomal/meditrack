@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { analysisService } from "../../services/api";
 
 interface Message {
@@ -33,39 +35,43 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = async (text?: string) => {
-    const messageText = text || input;
-    if (!messageText.trim() || loading) return;
-    
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: messageText.trim()
+    const sendMessage = async (text?: string) => {
+        const messageText = text || input;
+        if (!messageText.trim() || loading) return;
+        
+        const userMessage: Message = {
+            id: Date.now().toString(),
+            role: "user",
+            content: messageText.trim()
+        };
+        
+        setMessages(prev => [...prev, userMessage]);
+        setInput("");
+        setLoading(true);
+        
+        console.log('[CHAT] Sending message:', userMessage.content);
+        
+        try {
+            const response = await analysisService.chat(userMessage.content);
+            console.log('[CHAT] Received response:', response.data);
+            const botMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                role: "bot",
+                content: response.data.response,
+                sources: response.data.sources
+            };
+            setMessages(prev => [...prev, botMessage]);
+        } catch (error: any) {
+            console.error('[CHAT] Error:', error);
+            setMessages(prev => [...prev, {
+                id: (Date.now() + 1).toString(),
+                role: "bot",
+                content: error.response?.data?.detail || error.response?.data?.error?.message || "Sorry, I encountered an error. Please try again."
+            }]);
+        } finally {
+            setLoading(false);
+        }
     };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
-    setLoading(true);
-    
-    try {
-      const response = await analysisService.chat(userMessage.content);
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "bot",
-        content: response.data.response,
-        sources: response.data.sources
-      };
-      setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: "bot",
-        content: "Sorry, I encountered an error. Please try again."
-      }]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -104,21 +110,27 @@ const ChatPage = () => {
         <p className="text-xs text-amber-800">Not a replacement for professional medical advice</p>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+{/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (
           <div
             key={msg.id}
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
-            <div
-              className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm ${
-                msg.role === "user"
-                  ? "bg-teal-600 text-white rounded-br-lg"
-                  : "bg-slate-100 text-slate-700 rounded-bl-lg"
-              }`}
-            >
-              <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+              <div
+                className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm ${
+                  msg.role === "user"
+                    ? "bg-teal-600 text-white rounded-br-lg"
+                    : "bg-slate-100 text-slate-700 rounded-bl-lg"
+                }`}
+              >
+                {msg.role === "user" ? (
+                  <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                ) : (
+                  <div className="prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0.5">
+                    <Markdown remarkPlugins={[remarkGfm]}>{msg.content}</Markdown>
+                  </div>
+                )}
               {msg.sources && msg.sources.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-slate-200/20">
                   <p className="text-xs text-slate-500 mb-2">Based on:</p>

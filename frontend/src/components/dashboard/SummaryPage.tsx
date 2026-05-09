@@ -12,6 +12,15 @@ interface SummaryData {
   total_analyses: number;
   predictions: Array<{condition: string; probability: number; reasoning: string}>;
   latest_analysis_date: string;
+  latest_metrics: Array<{
+    test: string;
+    display_name: string;
+    value: number;
+    unit: string;
+    status: string;
+    category: string;
+    reference_range: string;
+  }>;
 }
 
 interface TokenUsage {
@@ -101,9 +110,41 @@ const Summary = () => {
       </nav>
       <main className="container mx-auto p-8">
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Health Score */}
+          {/* Key Metrics or Health Score */}
           <div className="md:col-span-2">
-            <HealthScore score={summary.health_score} />
+            {summary.latest_metrics && summary.latest_metrics.length > 0 ? (
+              <div className="p-6 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50 border border-gray-100 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">Latest Health Metrics</h3>
+                  <span className="text-sm text-gray-500">
+                    {summary.latest_analysis_date ? new Date(summary.latest_analysis_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {summary.latest_metrics.slice(0, 8).map((metric, idx) => {
+                    const statusColors = {
+                      normal: 'bg-green-100 text-green-700',
+                      high: 'bg-red-100 text-red-700',
+                      low: 'bg-amber-100 text-amber-700',
+                      critical: 'bg-red-200 text-red-800'
+                    };
+                    return (
+                      <div key={idx} className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <p className="text-xs text-gray-500 mb-1">{metric.display_name}</p>
+                        <p className="text-2xl font-bold text-gray-800">
+                          {metric.value} <span className="text-sm font-normal text-gray-500">{metric.unit}</span>
+                        </p>
+                        <span className={`inline-block mt-2 px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[metric.status as keyof typeof statusColors] || statusColors.normal}`}>
+                          {metric.status}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <HealthScore score={summary.health_score} />
+            )}
           </div>
           
           {/* Active Conditions */}

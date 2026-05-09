@@ -32,11 +32,13 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 1024);
     };
     checkMobile();
     window.addEventListener("resize", checkMobile);
@@ -109,7 +111,7 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
   return (
     <div className="min-h-screen bg-slate-50 flex w-full max-w-full overflow-x-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-slate-100 flex-col fixed h-screen left-0 top-0 z-40">
+      <aside className="hidden lg:flex w-64 bg-white border-r border-slate-100 flex-col fixed h-screen left-0 top-0 z-40">
         {/* Logo */}
         <div className="p-6 border-b border-slate-100">
           <div className="flex items-center gap-3">
@@ -162,15 +164,15 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/20 z-30 md:hidden"
+          className="fixed inset-0 bg-black/20 z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col md:ml-64 min-h-screen w-full max-w-full overflow-x-hidden">
+      <div className="flex-1 flex flex-col lg:ml-64 min-h-screen w-full max-w-full overflow-x-hidden">
         {/* Mobile Header */}
-        <header className="md:hidden bg-white border-b border-slate-100 sticky top-0 z-20">
+        <header className="lg:hidden bg-white border-b border-slate-100 sticky top-0 z-20">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
@@ -180,14 +182,33 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
               </div>
               <span className="font-bold text-slate-800">HealthSync</span>
             </div>
-            <button 
-              onClick={logout}
-              className="p-2 hover:bg-slate-50 rounded-lg"
-            >
-              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => isMobile ? setActiveTab("chat") : setChatOpen(true)}
+                className="p-2 hover:bg-slate-50 rounded-lg"
+                title="Assistant"
+              >
+                <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </button>
+              <button 
+                onClick={() => setActiveTab("profile")}
+                className="p-2 hover:bg-slate-50 rounded-lg"
+              >
+                <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </button>
+              <button 
+                onClick={logout}
+                className="p-2 hover:bg-slate-50 rounded-lg"
+              >
+                <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -222,6 +243,16 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
           <div className="animate-fade-in w-full px-3 md:px-6 py-4 md:py-6">
             {renderTabContent()}
           </div>
+          
+          {/* Footer - Both Mobile & Desktop */}
+          <div className="px-6 py-6 text-center border-t border-slate-100">
+            <p className="text-sm text-slate-400">© {new Date().getFullYear()} HealthSync. All rights reserved.</p>
+            <div className="flex justify-center gap-4 mt-3">
+              <button onClick={() => setShowTerms(true)} className="text-sm text-slate-500 hover:text-teal-600 transition-colors">Terms & Conditions</button>
+              <span className="text-slate-200">|</span>
+              <button onClick={() => setShowPrivacy(true)} className="text-sm text-slate-500 hover:text-teal-600 transition-colors">Privacy Policy</button>
+            </div>
+          </div>
         </main>
       </div>
 
@@ -230,6 +261,120 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
 
       {/* Chat Widget - Desktop only */}
       {!isMobile && <ChatWidget isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />}
+
+      {/* Terms Modal */}
+      {showTerms && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-800">Terms & Conditions</h2>
+              <button onClick={() => setShowTerms(false)} className="p-2 hover:bg-slate-100 rounded-xl">
+                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh] text-sm text-slate-600 space-y-4">
+              <p className="text-slate-500 text-xs">Effective Date: May 8, 2026</p>
+              
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-2">1. Acceptance of Terms</h3>
+                <p>By accessing and using HealthSync, you agree to be bound by these Terms and Conditions. If you do not agree, please do not use our Service.</p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-2">2. Description of Service</h3>
+                <p>HealthSync provides a platform for managing personal health records with:</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Upload and storage of medical documents (PDF, JPG, PNG)</li>
+                  <li>AI-powered analysis of medical documents</li>
+                  <li>Telegram bot integration for health tracking</li>
+                  <li>Medical advisor chatbot for general health information</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-2">3. User Accounts</h3>
+                <p>You must provide accurate information when creating an account. You are responsible for maintaining the confidentiality of your login credentials.</p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-2">4. Medical Document Storage</h3>
+                <p>HealthSync stores your medical documents securely. You retain full ownership of all documents you upload. We do not share your documents with third parties.</p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-2">5. AI Health Advisor</h3>
+                <p>The AI-powered medical advisor provides general health information only. <span className="font-semibold text-red-600">NOT a replacement for professional medical advice.</span> Always consult a healthcare professional for medical decisions.</p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-2">6. Limitation of Liability</h3>
+                <p>HealthSync is provided "as is" without warranties. We are not liable for any decisions made based on AI responses or outputs.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Modal */}
+      {showPrivacy && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-800">Privacy Policy</h2>
+              <button onClick={() => setShowPrivacy(false)} className="p-2 hover:bg-slate-100 rounded-xl">
+                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh] text-sm text-slate-600 space-y-4">
+              <p className="text-slate-500 text-xs">Effective Date: May 8, 2026</p>
+              
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-2">1. Information We Collect</h3>
+                <p className="font-medium text-slate-700">Personal Information:</p>
+                <ul className="list-disc list-inside mt-1 mb-2">
+                  <li>Name and email address</li>
+                  <li>Profile information (age, gender, blood type)</li>
+                  <li>Medical conditions and allergies</li>
+                  <li>Health readings (glucose, blood pressure)</li>
+                </ul>
+                <p className="font-medium text-slate-700">Medical Documents:</p>
+                <ul className="list-disc list-inside mt-1">
+                  <li>Uploaded files (PDF, images)</li>
+                  <li>Document metadata</li>
+                  <li>AI analysis results</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-2">2. How We Use Your Information</h3>
+                <p>We use collected information to:</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Provide and maintain the Service</li>
+                  <li>Process and analyze uploaded medical documents</li>
+                  <li>Generate health insights and trends</li>
+                  <li>Send reminders (if Telegram is connected)</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-2">3. Data Storage</h3>
+                <p>Your data is stored on MongoDB. Medical documents use AWS S3 with encryption. All medical data is encrypted at rest and in transit.</p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-2">4. Your Rights</h3>
+                <p>You have the right to:</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Access your personal data</li>
+                  <li>Request correction of inaccurate data</li>
+                  <li>Request deletion of your account and data</li>
+                  <li>Withdraw consent for Telegram integration</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

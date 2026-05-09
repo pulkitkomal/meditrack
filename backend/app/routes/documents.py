@@ -100,6 +100,17 @@ async def upload_document(
         "document_date": parsed_date,
         **file_info
     }
+    
+    # Generate predicted title
+    try:
+        from app.services.analysis import generate_document_title
+        predicted_title = await generate_document_title(file_path_str, category)
+        if predicted_title:
+            doc_dict["predicted_title"] = predicted_title
+            logger.info(f"[UPLOAD] Generated predicted title: {predicted_title}")
+    except Exception as e:
+        logger.warning(f"[UPLOAD] Failed to generate title: {e}")
+    
     result = await db.documents.insert_one(doc_dict)
     document_id = str(result.inserted_id)
     logger.info(f"[UPLOAD] Document record created in MongoDB with ID: {document_id}")
@@ -128,6 +139,7 @@ async def bulk_upload_documents(
     db=Depends(get_db)
 ):
     logger.info(f"[BULK-UPLOAD] Starting bulk upload - {len(files)} files, category: {category}")
+    logger.info(f"[BULK-UPLOAD] Request received at /documents/bulk-upload endpoint")
     if category not in ALLOWED_CATEGORIES:
         logger.warning(f"[BULK-UPLOAD] Invalid category: {category}")
         raise HTTPException(400, "Invalid category")
@@ -268,6 +280,7 @@ async def list_documents(
         docs.append({
             "id": str(doc["_id"]),
             "original_name": doc["original_name"],
+            "predicted_title": doc.get("predicted_title"),
             "category": doc["category"],
             "file_size": doc["file_size"],
             "upload_date": str(upload_date) if upload_date else None,
@@ -351,3 +364,45 @@ async def get_document_file(
             media_type=doc.get("mime_type", "application/octet-stream"),
             filename=doc.get("original_name", "document")
         )
+
+@router.post("/update-titles")
+async def update_all_titles(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
+    """Generate predicted titles for all documents without one"""
+    logger.info(f"[UPLOAD] Updating titles for all user documents")
+    user = await get_current_user(token, db)
+    
+    # Find documents without predicted_title
+    cursor = db.documents.find({
+        "user_id": str(user["_id"]),
+        "predicted_title": {"$exists": False}
+    })
+    
+    updated = 0
+    from app.services.analysis import generate_document_title
+    
+    async for doc in cursor:
+        file_path = doc.get("file_path")
+        category = doc.get("category", "other")
+        
+        if not file_path:
+            continue
+        
+        storage_type = doc.get("storage_type", "local")
+        if storage_type == "s3":
+            logger.info(f"[UPLOAD] Skipping S3 doc {doc['_id']}")
+            continue
+        
+        try:
+            title = await generate_document_title(file_path, category)
+            if title:
+                await db.documents.update_one(
+                    {"_id": doc["_id"]},
+                    {"$set": {"predicted_title": title}}
+                )
+                updated += 1
+                logger.info(f"[UPLOAD] Updated title for doc {doc['_id']}: {title}")
+        except Exception as e:
+            logger.error(f"[UPLOAD] Error updating doc {doc['_id']}: {e}")
+    
+    logger.info(f"[UPLOAD] Updated {updated} document titles")
+    return {"message": f"Updated {updated} document titles"}

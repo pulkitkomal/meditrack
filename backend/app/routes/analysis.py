@@ -5,7 +5,7 @@ from pathlib import Path
 from app.oauth2 import oauth2_scheme
 from app.utils.security import get_current_user
 from app.services.analysis import get_user_analyses, get_analysis_for_document, generate_doctor_questions, analyze_document, save_analysis_result, chat_with_medical_advisor
-from app.services.comparison import compare_lab_values, calculate_health_score, get_active_conditions, predict_conditions
+from app.services.comparison import compare_lab_values, calculate_health_score, get_active_conditions, predict_conditions, get_latest_key_metrics
 from app.services.token_tracker import get_user_usage, get_usage_history
 from app.services.task_queue import create_analysis_task, get_task_status, get_user_tasks
 
@@ -172,12 +172,15 @@ async def get_summary(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     analyses = await get_user_analyses(db, str(user["_id"]))
     logger.info(f"[ANALYSIS-ROUTE] Retrieved {len(analyses)} analyses for summary")
     
-    health_score = calculate_health_score(analyses)
+    user_conditions = user.get("medical_conditions", [])
+    health_score = calculate_health_score(analyses, user_conditions)
     logger.info(f"[ANALYSIS-ROUTE] Health score calculated: {health_score}")
     active_conditions = get_active_conditions(analyses)
     logger.info(f"[ANALYSIS-ROUTE] Active conditions: {active_conditions}")
     predictions = predict_conditions(analyses)
     logger.info(f"[ANALYSIS-ROUTE] Predictions generated: {len(predictions)} items")
+    latest_metrics = get_latest_key_metrics(analyses)
+    logger.info(f"[ANALYSIS-ROUTE] Key metrics extracted: {len(latest_metrics)} items")
     
     profile_info = {}
     if user.get("age"):
@@ -197,7 +200,8 @@ async def get_summary(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
         "total_analyses": len(analyses),
         "predictions": predictions,
         "latest_analysis_date": analyses[0]["analysis_date"] if analyses else None,
-        "profile": profile_info
+        "profile": profile_info,
+        "latest_metrics": latest_metrics
     }
     logger.info(f"[ANALYSIS-ROUTE] Summary returned: {result}")
     return result
