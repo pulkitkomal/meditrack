@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { analysisService } from "../../services/api";
+import { analysisService, documentService } from "../../services/api";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 
@@ -9,7 +9,28 @@ const AnalysisPage = () => {
   const [analysis, setAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showExtracted, setShowExtracted] = useState(true);
+  const [originalUrl, setOriginalUrl] = useState<string | null>(null);
+  const [loadingOriginal, setLoadingOriginal] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!showExtracted && docId && !originalUrl) {
+      setLoadingOriginal(true);
+      documentService.getFile(docId)
+        .then(res => {
+          const url = URL.createObjectURL(res.data);
+          setOriginalUrl(url);
+        })
+        .catch(err => {
+          console.error("Failed to load original document:", err);
+        })
+        .finally(() => setLoadingOriginal(false));
+    }
+    if (showExtracted && originalUrl) {
+      URL.revokeObjectURL(originalUrl);
+      setOriginalUrl(null);
+    }
+  }, [showExtracted, docId]);
 
   useEffect(() => {
     const fetchAnalysis = async () => {
@@ -191,7 +212,7 @@ const AnalysisPage = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
                             )}
-                            {lab.status.charAt(0).toUpperCase() + lab.status.slice(1)}
+                            {lab.status ? lab.status.charAt(0).toUpperCase() + lab.status.slice(1) : 'Unknown'}
                           </span>
                         </td>
                       </tr>
@@ -307,23 +328,26 @@ const AnalysisPage = () => {
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
-                {analysis.file_path ? (
+                {loadingOriginal ? (
+                  <div className="flex items-center justify-center h-64">
+                    <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : analysis.file_path && originalUrl ? (
                   (() => {
                     const mimeType = analysis.mime_type || analysis.file_type || '';
                     const isPdf = mimeType === 'application/pdf' || mimeType.endsWith('.pdf');
                     return isPdf ? (
                       <iframe 
-                        src={`/api/documents/file/${docId}?token=${localStorage.getItem('token')}`}
+                        src={originalUrl}
                         className="w-full h-[600px] rounded-lg border border-gray-200"
                         title="Original Document"
                       />
                     ) : (
                       <div className="text-center">
                         <img 
-                          src={`/api/documents/file/${docId}?token=${localStorage.getItem('token')}`}
+                          src={originalUrl}
                           alt="Original Document"
                           className="max-w-full h-auto rounded-lg border border-gray-200 mx-auto"
-                          crossOrigin="anonymous"
                         />
                       </div>
                     );

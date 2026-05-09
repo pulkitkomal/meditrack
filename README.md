@@ -57,6 +57,12 @@ The app features a premium, clean design inspired by Apple Health:
 - **Smooth animations**: Fade-in transitions, hover effects
 - **Premium components**: Rounded cards, soft shadows, modern typography
 
+## Recent Updates
+
+- **PWA Support**: Install as a standalone app on mobile and desktop
+- **Original Document Viewer**: View original PDF/image files directly in the app
+- **Bug Fixes**: Fixed null status handling in lab values, improved document loading
+
 ## Tech Stack
 
 - **Frontend**: React + TypeScript + TailwindCSS + Vite

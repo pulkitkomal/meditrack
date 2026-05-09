@@ -294,38 +294,21 @@ async def list_documents(
 @router.get("/file/{doc_id}")
 async def get_document_file(
     doc_id: str,
-    token: str = None,
+    token: str = Depends(oauth2_scheme),
     db=Depends(get_db)
 ):
     """Get the actual document file (image or PDF)"""
     logger.info(f"[DOCUMENTS] Getting file for document: {doc_id}")
     
-    # Get user from token query param or header
-    if token and not token.startswith('Bearer'):
-        # Try token as query param
-        try:
-            from jose import jwt
-            from app.config import settings
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-            email = payload.get("sub")
-            user = await db.users.find_one({"email": email})
-        except Exception as e:
-            logger.warning(f"[DOCUMENTS] Token parse failed: {e}")
-            raise HTTPException(401, "Invalid token")
-    elif token and token.startswith('Bearer '):
-        # Try from Authorization header
-        token_val = token.replace('Bearer ', '')
-        try:
-            from jose import jwt
-            from app.config import settings
-            payload = jwt.decode(token_val, settings.SECRET_KEY, algorithms=["HS256"])
-            email = payload.get("sub")
-            user = await db.users.find_one({"email": email})
-        except Exception as e:
-            logger.warning(f"[DOCUMENTS] Token parse failed: {e}")
-            raise HTTPException(401, "Invalid token")
-    else:
-        raise HTTPException(401, "Not authenticated")
+    try:
+        from jose import jwt
+        from app.config import settings
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        email = payload.get("sub")
+        user = await db.users.find_one({"email": email})
+    except Exception as e:
+        logger.warning(f"[DOCUMENTS] Token parse failed: {e}")
+        raise HTTPException(401, "Invalid token")
     
     if not user:
         raise HTTPException(401, "User not found")

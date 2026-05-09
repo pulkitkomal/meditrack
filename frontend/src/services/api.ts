@@ -45,7 +45,8 @@ export const documentService = {
     formData.append("category", category);
     return api.post("/documents/bulk-upload", formData);
   },
-  list: (params?: { category?: string; date_from?: string; date_to?: string; upload_from?: string; upload_to?: string }) => api.get("/documents/", { params: params || {} })
+  list: (params?: { category?: string; date_from?: string; date_to?: string; upload_from?: string; upload_to?: string }) => api.get("/documents/", { params: params || {} }),
+  getFile: (docId: string) => api.get(`/documents/file/${docId}`, { responseType: 'blob' })
 };
 
 export const analysisService = {
