@@ -184,7 +184,7 @@ const AnalysisPage = () => {
                   <tbody>
                     {analysis.extracted_data.lab_values.map((lab: any, idx: number) => (
                       <tr key={idx} className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors">
-                        <td className="py-4 px-4 text-gray-800 font-medium">{lab.test}</td>
+                        <td className="py-4 px-4 text-gray-800 font-medium">{lab.display_name || lab.test}</td>
                         <td className="py-4 px-4 text-gray-700">
                           <span className="font-semibold">{lab.value}</span> {lab.unit}
                         </td>

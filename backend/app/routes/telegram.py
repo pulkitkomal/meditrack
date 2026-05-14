@@ -113,6 +113,8 @@ async def get_health_readings(
         if doc["type"] == "bp":
             reading["systolic"] = doc.get("systolic")
             reading["diastolic"] = doc.get("diastolic")
+        if doc["type"] == "weight":
+            reading["unit"] = doc.get("unit", "kg")
         
         readings.append(reading)
     
@@ -147,8 +149,27 @@ async def get_readings_summary(token: str = Depends(oauth2_scheme), db=Depends(g
     ]
     bp_result = await db.health_readings.aggregate(bp_pipeline).to_list(length=1)
     
+    # Calculate average weight
+    weight_pipeline = [
+        {"$match": {"user_id": str(user["_id"]), "type": "weight"}},
+        {"$group": {
+            "_id": "$type",
+            "avg_value": {"$avg": "$value"},
+            "unit": {"$first": "$unit"},
+            "count": {"$sum": 1}
+        }}
+    ]
+    weight_result = await db.health_readings.aggregate(weight_pipeline).to_list(length=1)
+    
+    # Get latest weight reading
+    latest_weight = await db.health_readings.find_one(
+        {"user_id": str(user["_id"]), "type": "weight"},
+        sort=[("timestamp", -1)]
+    )
+    
     glucose_data = glucose_result[0] if glucose_result else None
     bp_data = bp_result[0] if bp_result else None
+    weight_data = weight_result[0] if weight_result else None
     
     return {
         "glucose": {
@@ -166,6 +187,15 @@ async def get_readings_summary(token: str = Depends(oauth2_scheme), db=Depends(g
                 "timestamp": None  # No timestamp for average
             } if bp_data else None,
             "count": bp_data["count"] if bp_data else 0
+        },
+        "weight": {
+            "latest": {
+                "value": latest_weight["value"] if latest_weight else None,
+                "unit": latest_weight.get("unit", "kg") if latest_weight else "kg",
+                "timestamp": latest_weight["timestamp"].isoformat() if latest_weight else None
+            } if latest_weight else None,
+            "avg": round(weight_data["avg_value"], 1) if weight_data else None,
+            "count": weight_data["count"] if weight_data else 0
         }
     }
 

@@ -122,7 +122,7 @@ const History = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {analysis.comparison.slice(0, 6).map((trend: any, i: number) => (
                           <div key={i} className="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-100">
-                            <span className="text-sm font-medium text-gray-700 truncate">{trend.test}</span>
+                            <span className="text-sm font-medium text-gray-700 truncate">{trend.display_name || trend.test}</span>
                             <div className="flex items-center gap-2">
                               <span className="text-sm text-gray-600">{trend.current} {trend.unit}</span>
                               <span className={`px-2 py-0.5 rounded text-xs font-medium ${

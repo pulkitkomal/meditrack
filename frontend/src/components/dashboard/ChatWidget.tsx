@@ -8,6 +8,41 @@ interface Message {
   sources?: { doc_name: string; category: string }[];
 }
 
+const getConditionBasedSuggestions = (conditions: string[]): string[] => {
+  const suggestions: string[] = [];
+  const all = [
+    "Explain my latest lab results",
+    "What do my medications do?",
+    "Summarize my health summary",
+    "What do my health predictions mean?"
+  ];
+
+  for (const c of conditions) {
+    const cl = c.toLowerCase();
+    if (cl.includes('diabetes')) {
+      suggestions.push("Explain my glucose levels");
+      suggestions.push("What does my HbA1c mean?");
+    }
+    if (cl.includes('hypertension')) {
+      suggestions.push("Explain my blood pressure readings");
+    }
+    if (cl.includes('heart') || cl.includes('cardiac')) {
+      suggestions.push("Explain my cholesterol levels");
+    }
+    if (cl.includes('thyroid')) {
+      suggestions.push("Explain my thyroid test results");
+    }
+    if (cl.includes('kidney') || cl.includes('renal')) {
+      suggestions.push("Explain my kidney function results");
+    }
+    if (cl.includes('anemia')) {
+      suggestions.push("Explain my blood count results");
+    }
+  }
+
+  return suggestions.length > 0 ? suggestions.slice(0, 4) : all;
+};
+
 const parseMarkdown = (text: string): string => {
   let result = text;
   result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -22,12 +57,22 @@ const parseMarkdown = (text: string): string => {
   return result;
 };
 
-const ChatWidget = ({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => void }) => {
+interface ChatWidgetProps {
+  isOpen: boolean;
+  onToggle: () => void;
+  userConditions?: string[];
+}
+
+const ChatWidget = ({ isOpen, onToggle, userConditions = [] }: ChatWidgetProps) => {
+  const conditionsText = userConditions.length > 0
+    ? `Based on your conditions (${userConditions.join(', ')}), here are some things I can help with:`
+    : "Here are some things I can help with:";
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "bot",
-      content: "Hi! I'm your Health Assistant. I can help you understand your health documents, explain test results, and answer general health questions.\n\n**Important:** I'm an AI assistant, not a doctor. Always consult a healthcare professional for medical advice.\n\nWhat would you like to know?"
+      content: `Hi! I'm your Health Assistant. I can help you understand your health documents, explain test results, and answer questions about your health based on your actual medical data.\n\n**Important:** I'm an AI assistant, not a doctor. Always consult a healthcare professional for medical advice.\n\n${conditionsText}`
     }
   ]);
   const [input, setInput] = useState("");
@@ -38,19 +83,21 @@ const ChatWidget = ({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => voi
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isOpen]);
 
+  const quickSuggestions = getConditionBasedSuggestions(userConditions);
+
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
-    
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
       content: input.trim()
     };
-    
+
     setMessages(prev => [...prev, userMessage]);
     setInput("");
     setLoading(true);
-    
+
     try {
       const response = await analysisService.chat(userMessage.content);
       const botMessage: Message = {
@@ -164,6 +211,27 @@ const ChatWidget = ({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => voi
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Quick Suggestions */}
+      {messages.length <= 2 && (
+        <div className="px-4 pb-2">
+          <div className="flex flex-wrap gap-1.5">
+            {quickSuggestions.slice(0, 3).map((suggestion, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  setInput(suggestion);
+                  sendMessage();
+                  setInput("");
+                }}
+                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs rounded-full transition-colors"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Input */}
       <div className="p-3 border-t border-slate-100">

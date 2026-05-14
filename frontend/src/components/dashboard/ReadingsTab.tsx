@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { telegramService } from "../../services/api";
+import { telegramService, authService } from "../../services/api";
 
 interface Reading {
   id: string;
@@ -23,6 +23,11 @@ interface Summary {
     count: number;
     avg_sys?: number;
     avg_dia?: number;
+  };
+  weight: {
+    latest: { value: number; unit: string; timestamp: string } | null;
+    avg: number | null;
+    count: number;
   };
 }
 
@@ -94,26 +99,43 @@ const getBPStatus = (sys: number, dia: number) => {
   return { label: "High (Stage 2)", color: "text-red-500", bg: "bg-red-50" };
 };
 
-const EmptyVitals = ({ type, onConnect }: { type: string; onConnect?: () => void }) => (
-  <div className="text-center py-8">
-    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-      <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
+const getWeightStatus = (current: number, dryWeight: number | null) => {
+  if (!dryWeight) return { label: "No dry weight set", color: "text-slate-400", bg: "bg-slate-50" };
+  const diff = current - dryWeight;
+  if (Math.abs(diff) <= 0.5) return { label: "At dry weight", color: "text-emerald-500", bg: "bg-emerald-50" };
+  if (diff > 0) return { label: `+${diff.toFixed(1)} kg over`, color: "text-orange-500", bg: "bg-orange-50" };
+  return { label: `${diff.toFixed(1)} kg under`, color: "text-blue-500", bg: "bg-blue-50" };
+};
+
+const EmptyVitals = ({ type, onConnect }: { type: string; onConnect?: () => void }) => {
+  const icons: Record<string, string> = {
+    glucose: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+    bp: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z",
+    weight: "M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
+  };
+  
+  return (
+    <div className="text-center py-8">
+      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+        <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={icons[type] || icons.glucose} />
+        </svg>
+      </div>
+      <p className="text-slate-500 mb-2">No {type} readings yet</p>
+      {onConnect && (
+        <button onClick={onConnect} className="text-sm font-medium text-teal-600 hover:text-teal-700">
+          Connect Telegram to start tracking →
+        </button>
+      )}
     </div>
-    <p className="text-slate-500 mb-2">No {type} readings yet</p>
-    {onConnect && (
-      <button onClick={onConnect} className="text-sm font-medium text-teal-600 hover:text-teal-700">
-        Connect Telegram to start tracking →
-      </button>
-    )}
-  </div>
-);
+  );
+};
 
 const ReadingsTab = () => {
   const [loading, setLoading] = useState(true);
   const [readings, setReadings] = useState<Reading[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [dryWeight, setDryWeight] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -124,12 +146,14 @@ const ReadingsTab = () => {
     setLoading(true);
     setError(null);
     try {
-      const [allReadingsRes, summaryRes] = await Promise.all([
+      const [allReadingsRes, summaryRes, userRes] = await Promise.all([
         telegramService.getReadings(),
-        telegramService.getSummary()
+        telegramService.getSummary(),
+        authService.getCurrentUser()
       ]);
       setReadings(allReadingsRes.data);
       setSummary(summaryRes.data);
+      setDryWeight(userRes.data.dry_weight || null);
     } catch (err) {
       console.error("Failed to load readings:", err);
       setError("Failed to load readings");
@@ -140,6 +164,7 @@ const ReadingsTab = () => {
 
   const glucoseReadings = readings.filter(r => r.type === "glucose").slice(0, 20).reverse();
   const bpReadings = readings.filter(r => r.type === "bp").slice(0, 20).reverse();
+  const weightReadings = readings.filter(r => r.type === "weight").slice(0, 20).reverse();
 
   if (loading) {
     return (
@@ -156,7 +181,7 @@ const ReadingsTab = () => {
       )}
 
       {/* Vitals Overview */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-3 gap-6">
         <VitalsCard 
           title="Blood Glucose" 
           icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
@@ -220,6 +245,38 @@ const ReadingsTab = () => {
             <EmptyVitals type="blood pressure" />
           )}
         </VitalsCard>
+
+        <VitalsCard 
+          title="Weight" 
+          icon="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" 
+          color="bg-cyan-50 text-cyan-600"
+        >
+          {summary?.weight?.latest ? (
+            <div>
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="text-4xl font-bold text-slate-800">{summary.weight.latest.value}</span>
+                <span className="text-lg text-slate-400">kg</span>
+              </div>
+              {dryWeight && (
+                <div className="mb-2">
+                  <span className="text-xs text-slate-400">Dry weight: {dryWeight} kg</span>
+                </div>
+              )}
+              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${getWeightStatus(summary.weight.latest.value, dryWeight).bg} ${getWeightStatus(summary.weight.latest.value, dryWeight).color}`}>
+                {getWeightStatus(summary.weight.latest.value, dryWeight).label}
+              </span>
+              {weightReadings.length > 1 && (
+                <SimpleChart data={weightReadings.map(r => r.value)} color="#06b6d4" />
+              )}
+              <div className="flex items-center justify-between mt-3 text-sm text-slate-500">
+                <span>{summary.weight.count} readings</span>
+                <span>{formatDate(summary.weight.latest.timestamp)}</span>
+              </div>
+            </div>
+          ) : (
+            <EmptyVitals type="weight" />
+          )}
+        </VitalsCard>
       </div>
 
       {/* Recent Readings Table */}
@@ -258,9 +315,11 @@ const ReadingsTab = () => {
                     </td>
                     <td className="py-3 px-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        reading.type === "glucose" ? "bg-purple-50 text-purple-600" : "bg-rose-50 text-rose-600"
+                        reading.type === "glucose" ? "bg-purple-50 text-purple-600" : 
+                        reading.type === "bp" ? "bg-rose-50 text-rose-600" : "bg-cyan-50 text-cyan-600"
                       }`}>
-                        {reading.type === "glucose" ? "Glucose" : "Blood Pressure"}
+                        {reading.type === "glucose" ? "Glucose" : 
+                         reading.type === "bp" ? "Blood Pressure" : "Weight"}
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -268,9 +327,13 @@ const ReadingsTab = () => {
                         <span className={`font-semibold ${getGlucoseStatus(reading.value).color}`}>
                           {reading.value} {reading.unit}
                         </span>
-                      ) : (
+                      ) : reading.type === "bp" ? (
                         <span className="font-semibold text-slate-800">
                           {reading.systolic}/{reading.diastolic} mmHg
+                        </span>
+                      ) : (
+                        <span className="font-semibold text-slate-800">
+                          {reading.value} kg
                         </span>
                       )}
                     </td>
@@ -279,9 +342,13 @@ const ReadingsTab = () => {
                         <span className={`text-xs ${getGlucoseStatus(reading.value).color}`}>
                           {getGlucoseStatus(reading.value).label}
                         </span>
-                      ) : (
+                      ) : reading.type === "bp" ? (
                         <span className={`text-xs ${getBPStatus(reading.systolic || 0, reading.diastolic || 0).color}`}>
                           {getBPStatus(reading.systolic || 0, reading.diastolic || 0).label}
+                        </span>
+                      ) : (
+                        <span className={`text-xs ${getWeightStatus(reading.value, dryWeight).color}`}>
+                          {getWeightStatus(reading.value, dryWeight).label}
                         </span>
                       )}
                     </td>

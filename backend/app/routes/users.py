@@ -32,6 +32,7 @@ async def get_user_profile(token: str = Depends(oauth2_scheme), db=Depends(get_d
         "blood_type": user.get("blood_type"),
         "height": user.get("height"),
         "weight": user.get("weight"),
+        "dry_weight": user.get("dry_weight"),
         "emergency_contact": user.get("emergency_contact"),
         "medical_conditions": user.get("medical_conditions", []),
         "allergies": user.get("allergies", []),
@@ -53,6 +54,7 @@ async def update_user_profile(
     blood_type: str = Body(None),
     height: float = Body(None),
     weight: float = Body(None),
+    dry_weight: float = Body(None),
     emergency_contact: str = Body(None),
     medical_conditions: list = Body(None),
     allergies: list = Body(None),
@@ -78,6 +80,8 @@ async def update_user_profile(
         update_data["height"] = height
     if weight is not None:
         update_data["weight"] = weight
+    if dry_weight is not None:
+        update_data["dry_weight"] = dry_weight
     if emergency_contact is not None:
         update_data["emergency_contact"] = emergency_contact
     if medical_conditions is not None:
@@ -116,6 +120,7 @@ async def update_user_profile(
         "blood_type": updated_user.get("blood_type"),
         "height": updated_user.get("height"),
         "weight": updated_user.get("weight"),
+        "dry_weight": updated_user.get("dry_weight"),
         "emergency_contact": updated_user.get("emergency_contact"),
         "medical_conditions": updated_user.get("medical_conditions", []),
         "allergies": updated_user.get("allergies", []),

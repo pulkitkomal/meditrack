@@ -84,15 +84,15 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
 
     switch (activeTab) {
       case "overview":
-        return <OverviewTab onNavigate={handleTabChange} />;
+        return <OverviewTab onNavigate={handleTabChange} userConditions={user.medical_conditions || []} />;
       case "readings":
         return <ReadingsTab />;
       case "documents":
         return <DocumentsTab />;
       case "insights":
-        return <InsightsTab />;
+        return <InsightsTab userConditions={user.medical_conditions || []} />;
       case "chat":
-        return isMobile ? <ChatPage /> : null;
+        return isMobile ? <ChatPage userConditions={user.medical_conditions || []} /> : null;
       default:
         return <OverviewTab onNavigate={handleTabChange} />;
     }
@@ -103,7 +103,7 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
   if (activeTab === "chat" && isMobile) {
     return (
       <div className="h-screen flex flex-col bg-white">
-        <ChatPage />
+        <ChatPage userConditions={user.medical_conditions || []} />
       </div>
     );
   }
@@ -260,7 +260,7 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
       {isMobile && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />}
 
       {/* Chat Widget - Desktop only */}
-      {!isMobile && <ChatWidget isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />}
+      {!isMobile && <ChatWidget isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} userConditions={user.medical_conditions || []} />}
 
       {/* Terms Modal */}
       {showTerms && (

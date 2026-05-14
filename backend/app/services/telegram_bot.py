@@ -43,6 +43,13 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text("❌ This link has expired. Please generate a new one from the Profile page.")
                 return
             
+            # Determine tracking types - add weight for dialysis patients
+            tracking_types = ["glucose", "bp"]
+            medical_conditions = user.get("medical_conditions", [])
+            if any("dialysis" in cond.lower() for cond in medical_conditions):
+                tracking_types.append("weight")
+                logger.info(f"[TELEGRAM] User has dialysis - adding weight tracking")
+            
             # Link the user with default settings
             await db.users.update_one(
                 {"_id": user["_id"]},
@@ -52,15 +59,17 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "telegram_link_token": None, 
                     "telegram_link_expires": None,
                     "notification_times": ["08:00", "12:00", "18:00", "21:00"],
-                    "tracking_types": ["glucose", "bp"]
+                    "tracking_types": tracking_types
                 }}
             )
+            
+            dialysis_msg = "\n• Send your weight (e.g., `70.5 kg`)" if "weight" in tracking_types else ""
             
             await update.message.reply_text(
                 "✅ *Successfully connected to HealthSync!*\n\n"
                 "Your Telegram is now linked to your account. You can:\n"
-                "• Send glucose readings (e.g., `150`)\n"
-                "• Send blood pressure (e.g., `120/80`)\n"
+                f"• Send glucose readings (e.g., `150`)\n"
+                f"• Send blood pressure (e.g., `120/80`){dialysis_msg}\n"
                 "• Send photos of your meters\n\n"
                 "Use `/status` to see your latest readings.",
                 parse_mode="Markdown"
@@ -72,10 +81,11 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(
         "🏥 *HealthSync Health Bot*\n\n"
-        "Welcome! I'll help you track your glucose and blood pressure readings.\n\n"
+        "Welcome! I'll help you track your health readings.\n\n"
         "📝 *How to use:*\n"
         "• Send text like `150` for glucose (mg/dL)\n"
         "• Send text like `120/80` for blood pressure\n"
+        "• Send text like `70.5 kg` for weight\n"
         "• Send a photo of your glucometer or BP monitor\n"
         "• Type `/status` to see your latest readings\n"
         "• Type `/help` for more commands\n\n"
@@ -95,6 +105,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "💡 *Quick Tips:*\n"
         "• Glucose: Send just the number (e.g., `150`)\n"
         "• Blood Pressure: Send as `systolic/diastolic` (e.g., `120/80`)\n"
+        "• Weight: Send weight in kg (e.g., `70.5` or `70.5 kg`)\n"
         "• Photos: Send a clear photo of your meter",
         parse_mode="Markdown"
     )
@@ -121,6 +132,10 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         {"user_id": str(user["_id"]), "type": "bp"},
         sort=[("timestamp", -1)]
     )
+    weight_reading = await db.health_readings.find_one(
+        {"user_id": str(user["_id"]), "type": "weight"},
+        sort=[("timestamp", -1)]
+    )
     
     msg = "📊 *Your Latest Readings:*\n\n"
     if glucose_reading:
@@ -131,9 +146,15 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if bp_reading:
         msg += f"💓 Blood Pressure: *{bp_reading['systolic']}/{bp_reading['diastolic']} mmHg*\n"
-        msg += f"   {bp_reading['timestamp'].strftime('%b %d, %I:%M %p')}\n"
+        msg += f"   {bp_reading['timestamp'].strftime('%b %d, %I:%M %p')}\n\n"
     else:
-        msg += "💓 Blood Pressure: No readings yet"
+        msg += "💓 Blood Pressure: No readings yet\n\n"
+    
+    if weight_reading:
+        msg += f"⚖️ Weight: *{weight_reading['value']} kg*\n"
+        msg += f"   {weight_reading['timestamp'].strftime('%b %d, %I:%M %p')}"
+    else:
+        msg += "⚖️ Weight: No readings yet"
     
     await update.message.reply_text(msg, parse_mode="Markdown")
 
@@ -219,6 +240,17 @@ def parse_health_value(text: str) -> Optional[Dict[str, Any]]:
                 "unit": "mg/dL"
             }
     
+    # Weight pattern (kg): 70 or 70 kg or 70.5 kg
+    weight_match = re.match(r'^(\d+\.?\d*)\s*kg?$', text, re.IGNORECASE)
+    if weight_match:
+        value = float(weight_match.group(1))
+        if 20 <= value <= 300:
+            return {
+                "type": "weight",
+                "value": value,
+                "unit": "kg"
+            }
+    
     return None
 
 async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -268,8 +300,10 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Confirm
     if parsed["type"] == "glucose":
         await update.message.reply_text(f"✅ Saved! Glucose: *{parsed['value']} {parsed['unit']}*", parse_mode="Markdown")
-    else:
+    elif parsed["type"] == "bp":
         await update.message.reply_text(f"✅ Saved! BP: *{parsed['systolic']}/{parsed['diastolic']} mmHg*", parse_mode="Markdown")
+    elif parsed["type"] == "weight":
+        await update.message.reply_text(f"✅ Saved! Weight: *{parsed['value']} kg*", parse_mode="Markdown")
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle incoming photos"""
@@ -406,15 +440,17 @@ async def send_reminder(chat_id: int, tracking_types: list, context: ContextType
     try:
         msg = "⏰ Time to log your health readings!\n\n"
         
-        if "glucose" in tracking_types and "bp" in tracking_types:
+        if "glucose" in tracking_types:
             msg += "• Send your glucose reading (e.g., `150`)\n"
+        if "bp" in tracking_types:
             msg += "• Send your blood pressure (e.g., `120/80`)\n"
+        if "weight" in tracking_types:
+            msg += "• Send your weight (e.g., `70.5 kg`)\n"
+        
+        if "glucose" in tracking_types or "bp" in tracking_types:
             msg += "• Or send a photo of your meter"
-        elif "glucose" in tracking_types:
-            msg += "• Send your glucose reading (e.g., `150`)"
-        elif "bp" in tracking_types:
-            msg += "• Send your blood pressure (e.g., `120/80`)"
-        else:
+        
+        if not tracking_types:
             return
         
         await context.bot.send_message(chat_id=chat_id, text=msg)

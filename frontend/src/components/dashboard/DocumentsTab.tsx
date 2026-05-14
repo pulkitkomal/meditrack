@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { documentService, analysisService } from "../../services/api";
 import FileUpload, { BulkUpload } from "./FileUpload";
 import { TaskQueueStatus } from "./TaskQueueStatus";
@@ -28,7 +28,15 @@ const DocumentsTab = () => {
   const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const carouselRef = React.useRef<HTMLDivElement>(null);
+
+  const analysisId = searchParams.get("analysis");
+  useEffect(() => {
+    if (analysisId) {
+      navigate(`/analysis/${analysisId}`);
+    }
+  }, [analysisId, navigate]);
 
   const fetchDocs = async (resetFilters = false) => {
     try {

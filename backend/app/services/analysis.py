@@ -15,6 +15,77 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", settings.OPENAI_API_KEY if h
 # Store the last response usage for tracking
 last_usage = None
 
+LAB_DISPLAY_NAME_MAPPING = {
+    "hba1c": "HbA1c",
+    "hba1c (gmi)": "HbA1c",
+    "glycosylated hemoglobin": "HbA1c",
+    "glycosylated hb": "HbA1c",
+    "hemoglobin a1c": "HbA1c",
+    "hb a1c": "HbA1c",
+    "hemoglobin": "Hemoglobin",
+    "hb": "Hemoglobin",
+    "hb-hemoglobin": "Hemoglobin",
+    "glucose": "Glucose",
+    "fasting glucose": "Fasting Glucose",
+    "blood glucose": "Blood Glucose",
+    "random blood sugar": "Blood Sugar",
+    "rbs": "Blood Sugar",
+    "creatinine": "Creatinine",
+    "gfr estimated": "eGFR",
+    "estimated gfr": "eGFR",
+    "gfr": "eGFR",
+    "urea": "Urea",
+    "urea nitrogen blood": "BUN",
+    "bun": "BUN",
+    "tsh": "TSH",
+    "thyroxine": "T4",
+    "t4": "T4",
+    "triiodothyronine": "T3",
+    "t3": "T3",
+    "cholesterol": "Cholesterol",
+    "total cholesterol": "Cholesterol",
+    "ldl": "LDL",
+    "hdl": "HDL",
+    "triglycerides": "Triglycerides",
+    "uric acid": "Uric Acid",
+    "bilirubin": "Bilirubin",
+    "albumin": "Albumin",
+    "alt": "ALT",
+    "alt (sgpt)": "ALT",
+    "sgpt": "ALT",
+    "ast": "AST",
+    "ast (sgot)": "AST",
+    "sgot": "AST",
+    "wbc": "WBC",
+    "total leukocyte count": "WBC",
+    "rbc count": "RBC",
+    "rbc": "RBC",
+    "platelet count": "Platelets",
+    "platelets": "Platelets",
+    "sodium": "Sodium",
+    "na": "Sodium",
+    "potassium": "Potassium",
+    "k": "Potassium",
+    "ferritin": "Ferritin",
+    "iron": "Iron",
+    "calcium": "Calcium",
+    "phosphorus": "Phosphorus",
+}
+
+def normalize_lab_display_names(lab_values: list) -> list:
+    """Normalize lab test names to proper display names"""
+    for lab in lab_values:
+        test_name = lab.get("test", "")
+        if test_name:
+            normalized = test_name.lower().strip()
+            if normalized in LAB_DISPLAY_NAME_MAPPING:
+                lab["display_name"] = LAB_DISPLAY_NAME_MAPPING[normalized]
+            else:
+                lab["display_name"] = test_name
+        else:
+            lab["display_name"] = lab.get("test", "Unknown")
+    return lab_values
+
 async def generate_document_title(file_path: str, category: str) -> Optional[str]:
     """Generate a predicted title for a document based on its content"""
     logger.info(f"[ANALYSIS] Generating title for file: {file_path}, category: {category}")
@@ -333,6 +404,8 @@ async def analyze_document(file_path, category: str, user_id: str, document_id: 
     logger.info(f"[ANALYSIS] Analysis data received - summary: {analysis_data.get('summary', 'N/A')[:100]}")
     logger.info(f"[ANALYSIS] Extracted {len(analysis_data.get('lab_values', []))} lab values, {len(analysis_data.get('medications', []))} medications, {len(analysis_data.get('diagnoses', []))} diagnoses")
     
+    normalized_lab_values = normalize_lab_display_names(analysis_data.get("lab_values", []))
+    
     # Extract document_date from analysis and update document record
     document_date_str = analysis_data.get("document_date")
     if document_date_str and db is not None:
@@ -368,9 +441,10 @@ async def analyze_document(file_path, category: str, user_id: str, document_id: 
     }
     
     # Add key facts
-    for lab in analysis_data.get("lab_values", []):
+    for lab in normalized_lab_values:
         status = lab.get("status", "normal")
-        chatbot_context["key_facts"].append(f"{lab['test']}: {lab['value']} {lab.get('unit', '')} ({status})")
+        display_name = lab.get("display_name", lab.get("test", "Unknown"))
+        chatbot_context["key_facts"].append(f"{display_name}: {lab['value']} {lab.get('unit', '')} ({status})")
     
     for med in analysis_data.get("medications", []):
         chatbot_context["key_facts"].append(f"Medication: {med.get('name')} {med.get('dosage', '')}")
@@ -381,21 +455,25 @@ async def analyze_document(file_path, category: str, user_id: str, document_id: 
     risk_factors = []
     predicted_conditions = []
     
-    for lab in analysis_data.get("lab_values", []):
+    for lab in normalized_lab_values:
+        display_name = lab.get("display_name", lab.get("test", "Unknown"))
         if lab.get("status") == "high":
-            risk_factors.append(f"Elevated {lab['test']}")
+            risk_factors.append(f"Elevated {display_name}")
         elif lab.get("status") == "low":
-            risk_factors.append(f"Low {lab['test']}")
+            risk_factors.append(f"Low {display_name}")
     
     logger.info(f"[ANALYSIS] Risk assessment complete - {len(risk_factors)} risk factors identified")
-    
+
     result = {
         "document_id": document_id,
         "user_id": user_id,
         "analysis_date": datetime.utcnow(),
         "document_date": document_date_str if document_date_str else None,
         "category": category,
-        "extracted_data": analysis_data,
+        "extracted_data": {
+            **analysis_data,
+            "lab_values": normalized_lab_values
+        },
         "chatbot_context": chatbot_context,
         "risk_assessment": {
             "risk_factors": risk_factors,
@@ -427,7 +505,7 @@ async def get_user_analyses(db, user_id: str, category: str = None):
     query = {"user_id": user_id}
     if category:
         query["category"] = category
-    cursor = db.analysis_results.find(query).sort("analysis_date", -1)
+    cursor = db.analysis_results.find(query).sort("document_date", -1)
     analyses = []
     async for doc in cursor:
         analyses.append({
@@ -606,16 +684,23 @@ async def chat_with_medical_advisor(db, user_id: str, message: str) -> dict:
         context = "No medical documents have been uploaded yet."
     
     # Build the prompt with user profile
-    system_prompt = f"""You are HealthSync, a helpful medical health assistant. The user has uploaded medical documents and may ask questions about their health data.
+    system_prompt = f"""You are HealthSync, a knowledgeable and helpful medical health assistant. You MUST follow these rules strictly:
 
-IMPORTANT RULES:
-1. You are NOT a doctor - always recommend consulting a healthcare professional for medical decisions
-2. Never provide specific medical diagnoses - only discuss what's in the documents
-3. Never suggest changing medications without advising to consult a doctor first
-4. If the user expresses concerning symptoms, encourage them to seek medical attention
-5. Be helpful, clear, and compassionate
-6. If you don't have enough information to answer, say so honestly
-7. Take the user's age, gender, and medical conditions into account when providing responses
+RULES:
+1. When the user asks about their health, ALWAYS use their actual lab values from their documents. Give specific numbers, not generic information.
+2. For each metric you discuss, include: what the value means, whether it's normal/abnormal, and what actions they should consider.
+3. Format your responses with: Summary (1-2 sentences), Key findings (bullet points), Specific recommendations, When to see a doctor.
+4. If a metric is out of range, explain WHY it matters and suggest concrete next steps. Don't just say "consult your doctor" - give actionable advice.
+5. Never be vague. Give specific numbers and reference ranges.
+6. Reference the user's actual values from their documents, not generic information.
+7. Always consider their conditions (if any), age, and gender when giving advice.
+8. You ARE allowed and ENCOURAGED to give health advice based on the provided documents.
+9. If the user asks about a condition they have, explain it in context of their own lab results.
+10. End every response with: "Consult your healthcare provider for personalized medical advice."
+
+IMPORTANT: Do not say "I don't have enough information" or "I can't see your documents" - you have access to their medical data. Use it to give specific, actionable advice.
+
+Keep responses concise but informative (max 300 words). Use markdown formatting with bullet points and headings where helpful.
 
 {profile_info}The user's medical data:
 """ + context
@@ -627,7 +712,7 @@ IMPORTANT RULES:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": message}
             ],
-            max_tokens=800
+            max_tokens=1200
         )
         
         # Track usage
