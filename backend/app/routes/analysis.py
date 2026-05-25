@@ -252,14 +252,19 @@ async def get_analysis(doc_id: str, token: str = Depends(oauth2_scheme), db=Depe
         raise HTTPException(404, "Analysis not found")
     analysis["_id"] = str(analysis["_id"])
     
-    # Get document info to include file_path
+    # Get document info to include file_path and document_date
     doc = await db.documents.find_one({"_id": ObjectId(doc_id)})
-    if doc and doc.get("file_path"):
-        analysis["file_path"] = str(doc["file_path"])
-        analysis["mime_type"] = doc.get("mime_type", "")
-        analysis["storage_type"] = doc.get("storage_type", "local")
+    if doc:
+        if doc.get("file_path"):
+            analysis["file_path"] = str(doc["file_path"])
+            analysis["mime_type"] = doc.get("mime_type", "")
+            analysis["storage_type"] = doc.get("storage_type", "local")
+        if doc.get("document_date"):
+            analysis["document_date"] = doc["document_date"]
+        else:
+            analysis["document_date"] = analysis.get("analysis_date")
     
-    logger.info(f"[ANALYSIS-ROUTE] Analysis found - category: {analysis.get('category')}, date: {analysis.get('analysis_date')}")
+    logger.info(f"[ANALYSIS-ROUTE] Analysis found - category: {analysis.get('category')}, date: {analysis.get('document_date')}")
     logger.info(f"[ANALYSIS-ROUTE] Returning analysis with keys: {list(analysis.keys())}")
     return analysis
 

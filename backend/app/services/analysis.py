@@ -2,7 +2,11 @@ import os
 import json
 import base64
 import logging
-from typing import Optional
+import subprocess
+import tempfile
+from io import BytesIO
+from pathlib import Path
+from typing import Optional, List
 from datetime import datetime
 from openai import OpenAI
 from app.config import settings
@@ -150,11 +154,71 @@ Generate a concise title:"""
         logger.error(f"[ANALYSIS] Failed to generate title: {e}")
         return None
 
+def _read_pdf_content(file_path: str):
+    """Read PDF file and open via stream"""
+    with open(file_path, "rb") as f:
+        content = f.read()
+    logger.info(f"[ANALYSIS] PDF file size: {len(content)} bytes, first bytes hex: {content[:20].hex()}")
+    import pymupdf
+    return pymupdf.open(stream=BytesIO(content), filetype="pdf")
+
+def _pdf_to_images_poppler(file_path: str) -> list:
+    """Convert PDF pages to base64 PNG images using pdftoppm"""
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = subprocess.run(
+                ["pdftoppm", "-png", "-r", "200", file_path, f"{tmpdir}/page"],
+                capture_output=True, timeout=30
+            )
+            if result.returncode != 0:
+                logger.warning(f"[ANALYSIS] pdftoppm failed: {result.stderr.decode()}")
+                return []
+            page_files = sorted(Path(tmpdir).glob("page-*.png"))
+            if not page_files:
+                logger.warning("[ANALYSIS] pdftoppm produced no output files")
+                return []
+            images = []
+            for pf in page_files:
+                with open(pf, "rb") as f:
+                    images.append(base64.b64encode(f.read()).decode("utf-8"))
+            logger.info(f"[ANALYSIS] pdftoppm converted {len(images)} pages")
+            return images
+    except FileNotFoundError:
+        logger.warning("[ANALYSIS] pdftoppm not installed")
+        return []
+    except Exception as e:
+        logger.warning(f"[ANALYSIS] pdftoppm failed: {e}")
+        return []
+
+def _pdf_to_text_poppler(file_path: str) -> str:
+    """Extract text from PDF using pdftotext"""
+    try:
+        result = subprocess.run(
+            ["pdftotext", "-layout", file_path, "-"],
+            capture_output=True, timeout=30
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            text = result.stdout.decode("utf-8", errors="replace")
+            logger.info(f"[ANALYSIS] pdftotext extracted {len(text)} characters")
+            return text
+    except FileNotFoundError:
+        logger.warning("[ANALYSIS] pdftotext not installed")
+    except Exception as e:
+        logger.warning(f"[ANALYSIS] pdftotext failed: {e}")
+    return ""
+
 def convert_pdf_to_images(file_path: str) -> list:
     logger.info(f"[ANALYSIS] Converting PDF to images: {file_path}")
+    # Try pdftoppm first — handles more PDF variants than pymupdf
+    poppler_images = _pdf_to_images_poppler(file_path)
+    if poppler_images:
+        logger.info(f"[ANALYSIS] pdftoppm converted {len(poppler_images)} pages")
+        return poppler_images
+    # Fall back to pymupdf
+    logger.warning("[ANALYSIS] pdftoppm unavailable or failed, trying pymupdf...")
     try:
         import pymupdf
-        doc = pymupdf.open(file_path)
+        doc = _read_pdf_content(file_path)
         images = []
         for page_num, page in enumerate(doc):
             pix = page.get_pixmap(matrix=pymupdf.Matrix(2, 2))
@@ -164,21 +228,36 @@ def convert_pdf_to_images(file_path: str) -> list:
         logger.info(f"[ANALYSIS] Converted {len(images)} pages to images")
         return images
     except Exception as e:
-        logger.error(f"[ANALYSIS] Failed to convert PDF to images: {e}", exc_info=True)
+        logger.warning(f"[ANALYSIS] pymupdf image conversion failed: {e}")
         return []
 
 def extract_text_from_pdf(file_path: str) -> str:
     logger.info(f"[ANALYSIS] Extracting text from PDF: {file_path}")
+    # Try pdftotext first
+    poppler_text = _pdf_to_text_poppler(file_path)
+    if poppler_text:
+        return poppler_text
+    # Fall back to pymupdf
+    logger.warning("[ANALYSIS] pdftotext unavailable or failed, trying pymupdf...")
     try:
         import pymupdf
-        doc = pymupdf.open(file_path)
+        doc = _read_pdf_content(file_path)
         text = ""
         for page in doc:
             text += page.get_text()
         logger.info(f"[ANALYSIS] Extracted {len(text)} characters from PDF with {len(doc)} pages")
         return text
-    except Exception as e:
-        logger.error(f"[ANALYSIS] Failed to extract text from PDF: {e}", exc_info=True)
+    except Exception:
+        logger.warning("[ANALYSIS] pymupdf text extraction failed, trying raw text fallback...")
+        try:
+            with open(file_path, "rb") as f:
+                raw = f.read()
+            text = raw.decode("utf-8", errors="replace")
+            if text.strip():
+                logger.info(f"[ANALYSIS] Extracted {len(text)} characters via raw text fallback")
+                return text
+        except Exception:
+            pass
         return ""
 
 def encode_image_to_base64(file_path: str) -> str:
@@ -491,6 +570,109 @@ async def save_analysis_result(db, analysis_data: dict) -> str:
     logger.info(f"[ANALYSIS] Analysis result saved with ID: {analysis_id}")
     return analysis_id
 
+async def generate_chunks_from_analysis(analysis_data: dict) -> List[dict]:
+    chunks = []
+    user_id = analysis_data.get("user_id")
+    document_id = analysis_data.get("document_id")
+    extracted = analysis_data.get("extracted_data", {})
+    
+    labs = extracted.get("lab_values", [])
+    if labs:
+        labs_content = "Lab Results: " + "; ".join([
+            f"{lab.get('test', 'Unknown')}: {lab.get('value', 'N/A')} {lab.get('unit', '')} ({lab.get('status', 'normal')})"
+            for lab in labs
+        ])
+        chunks.append({
+            "user_id": user_id,
+            "document_id": document_id,
+            "chunk_type": "labs",
+            "content": labs_content
+        })
+    
+    medications = extracted.get("medications", [])
+    if medications:
+        meds_content = "Medications: " + "; ".join([
+            f"{med.get('name', 'Unknown')}" + (f" {med.get('dosage', '')}" if med.get('dosage') else "")
+            for med in medications
+        ])
+        chunks.append({
+            "user_id": user_id,
+            "document_id": document_id,
+            "chunk_type": "medications",
+            "content": meds_content
+        })
+    
+    diagnoses = extracted.get("diagnoses", [])
+    if diagnoses:
+        diag_content = "Diagnoses: " + "; ".join([
+            f"{d.get('condition', 'Unknown')}" + (f" ({d.get('icd_code', '')})" if d.get('icd_code') else "")
+            for d in diagnoses
+        ])
+        chunks.append({
+            "user_id": user_id,
+            "document_id": document_id,
+            "chunk_type": "diagnoses",
+            "content": diag_content
+        })
+    
+    findings = extracted.get("findings", [])
+    if findings:
+        findings_content = "Findings: " + "; ".join(findings)
+        chunks.append({
+            "user_id": user_id,
+            "document_id": document_id,
+            "chunk_type": "findings",
+            "content": findings_content
+        })
+    
+    vitals = extracted.get("vitals")
+    if vitals:
+        vitals_parts = []
+        if vitals.get("blood_pressure"):
+            vitals_parts.append(f"BP: {vitals['blood_pressure']}")
+        if vitals.get("heart_rate"):
+            vitals_parts.append(f"HR: {vitals['heart_rate']} bpm")
+        if vitals.get("weight"):
+            vitals_parts.append(f"Weight: {vitals['weight']} kg")
+        if vitals.get("bmi"):
+            vitals_parts.append(f"BMI: {vitals['bmi']}")
+        if vitals_parts:
+            chunks.append({
+                "user_id": user_id,
+                "document_id": document_id,
+                "chunk_type": "vitals",
+                "content": "Vitals: " + ", ".join(vitals_parts)
+            })
+    
+    logger.info(f"[ANALYSIS] Generated {len(chunks)} chunks for document {document_id}")
+    return chunks
+
+async def save_document_chunks(db, chunks: List[dict]):
+    if not chunks:
+        return
+    
+    try:
+        from app.services.embeddings import embed_texts
+        
+        contents = [chunk["content"] for chunk in chunks]
+        embeddings = await embed_texts(contents)
+        
+        for i, chunk in enumerate(chunks):
+            chunk["embedding"] = embeddings[i]
+            chunk["created_at"] = datetime.utcnow()
+        
+        await db.document_chunks.insert_many(chunks)
+        logger.info(f"[ANALYSIS] Saved {len(chunks)} chunks with embeddings")
+    except Exception as e:
+        logger.error(f"[ANALYSIS] Failed to save chunks: {e}", exc_info=True)
+
+async def get_user_chunks(db, user_id: str) -> List[dict]:
+    cursor = db.document_chunks.find({"user_id": user_id})
+    chunks = []
+    async for chunk in cursor:
+        chunks.append(chunk)
+    return chunks
+
 async def get_analysis_for_document(db, document_id: str):
     logger.info(f"[ANALYSIS] Fetching analysis for document_id: {document_id}")
     result = await db.analysis_results.find_one({"document_id": document_id})
@@ -556,76 +738,108 @@ async def generate_doctor_questions(db, user_id: str, user_profile: dict = None)
     logger.info(f"[ANALYSIS] Generated {len(unique_questions)} doctor questions")
     return unique_questions
 
-async def build_chatbot_context(db, user_id: str) -> tuple:
+async def build_chatbot_context(db, user_id: str, message: str = "") -> tuple:
     logger.info(f"[ANALYSIS] Building chatbot context for user: {user_id}")
+    
     context_parts = []
     sources = []
     
-    # Get all documents (both analyzed and not analyzed)
-    cursor = db.documents.find({"user_id": user_id}).sort("upload_date", -1)
-    async for doc in cursor:
-        doc_info = {
-            "id": str(doc["_id"]),
-            "name": doc.get("original_name", "Unknown"),
-            "category": doc.get("category", "unknown"),
-            "document_date": doc.get("document_date", str(doc.get("upload_date", ""))[:10]),
-            "upload_date": str(doc.get("upload_date", ""))[:10]
-        }
-        
-        # Get analysis if available
-        analysis = await db.analysis_results.find_one({"document_id": doc_info["id"]})
-        
-        if analysis and analysis.get("extracted_data"):
-            extracted = analysis["extracted_data"]
+    chunks = await get_user_chunks(db, user_id)
+    
+    if chunks and message:
+        try:
+            from app.services.embeddings import embed_text, find_similar_chunks
+            from app.services.reranker import rerank_chunks
             
-            # Lab values
-            lab_values = extracted.get("lab_values", [])
-            if lab_values:
-                lab_text = f"Lab Results from {doc_info['document_date']}:\n"
-                for lab in lab_values[:20]:  # Limit to 20 to keep context manageable
-                    lab_text += f"  - {lab.get('test', 'Unknown')}: {lab.get('value', 'N/A')} {lab.get('unit', '')} ({(lab.get('status') or 'unknown').upper()})\n"
-                context_parts.append(lab_text)
+            logger.info(f"[ANALYSIS] Using semantic search with {len(chunks)} chunks")
             
-            # Medications
-            medications = extracted.get("medications", [])
-            if medications:
-                med_text = f"Medications from {doc_info['document_date']}:\n"
-                for med in medications:
-                    med_text += f"  - {med.get('name', 'Unknown')}: {med.get('dosage', 'N/A')} ({med.get('frequency', 'N/A')})\n"
-                context_parts.append(med_text)
+            query_embedding = await embed_text(message)
+            similar_chunks = await find_similar_chunks(query_embedding, chunks, top_k=20)
             
-            # Diagnoses
-            diagnoses = extracted.get("diagnoses", [])
-            if diagnoses:
-                diag_text = f"Diagnoses from {doc_info['document_date']}:\n"
-                for diag in diagnoses:
-                    diag_text += f"  - {diag.get('condition', 'Unknown')}\n"
-                context_parts.append(diag_text)
+            if similar_chunks:
+                reranked_chunks = await rerank_chunks(message, similar_chunks, top_k=5)
+                
+                logger.info(f"[ANALYSIS] Semantic search: {len(similar_chunks)} similar, {len(reranked_chunks)} after reranking")
+                
+                for chunk in reranked_chunks:
+                    chunk_type = chunk.get("chunk_type", "unknown")
+                    doc_id = chunk.get("document_id", "")
+                    
+                    content = chunk.get("content", "")
+                    if content:
+                        context_parts.append(f"[{chunk_type.upper()}] {content}")
+                    
+                    if doc_id and doc_id not in [s.get("doc_id") for s in sources]:
+                        doc = await db.documents.find_one({"_id": doc_id})
+                        if doc:
+                            sources.append({
+                                "doc_id": doc_id,
+                                "doc_name": doc.get("original_name", "Unknown"),
+                                "category": doc.get("category", "unknown"),
+                                "analyzed": True
+                            })
+        except Exception as e:
+            logger.warning(f"[ANALYSIS] Semantic search failed, falling back to traditional: {e}")
+            chunks = []
+    
+    if not context_parts:
+        cursor = db.documents.find({"user_id": user_id}).sort("upload_date", -1)
+        async for doc in cursor:
+            doc_info = {
+                "id": str(doc["_id"]),
+                "name": doc.get("original_name", "Unknown"),
+                "category": doc.get("category", "unknown"),
+                "document_date": doc.get("document_date", str(doc.get("upload_date", ""))[:10]),
+                "upload_date": str(doc.get("upload_date", ""))[:10]
+            }
             
-            # Findings
-            findings = extracted.get("findings", [])
-            if findings:
-                findings_text = f"Findings from {doc_info['document_date']} ({doc_info['category']}):\n"
-                for finding in findings[:10]:
-                    if isinstance(finding, dict):
-                        findings_text += f"  - {finding.get('description', str(finding))}\n"
-                    else:
-                        findings_text += f"  - {finding}\n"
-                context_parts.append(findings_text)
+            analysis = await db.analysis_results.find_one({"document_id": doc_info["id"]})
             
-            # Vaccinations
-            vaccinations = extracted.get("vaccinations", [])
-            if vaccinations:
-                vac_text = f"Vaccinations from {doc_info['document_date']}:\n"
-                for vac in vaccinations:
-                    vac_text += f"  - {vac.get('vaccine', 'Unknown')} ({vac.get('date', 'N/A')})\n"
-                context_parts.append(vac_text)
-            
-            sources.append({"doc_id": doc_info["id"], "doc_name": doc_info["name"], "category": doc_info["category"], "analyzed": True})
-        else:
-            # Document not analyzed yet
-            context_parts.append(f"Document: {doc_info['name']} (Category: {doc_info['category']}, Date: {doc_info['document_date']}) - Not yet analyzed")
-            sources.append({"doc_id": doc_info["id"], "doc_name": doc_info["name"], "category": doc_info["category"], "analyzed": False})
+            if analysis and analysis.get("extracted_data"):
+                extracted = analysis["extracted_data"]
+                
+                lab_values = extracted.get("lab_values", [])
+                if lab_values:
+                    lab_text = f"Lab Results from {doc_info['document_date']}:\n"
+                    for lab in lab_values[:20]:
+                        lab_text += f"  - {lab.get('test', 'Unknown')}: {lab.get('value', 'N/A')} {lab.get('unit', '')} ({(lab.get('status') or 'unknown').upper()})\n"
+                    context_parts.append(lab_text)
+                
+                medications = extracted.get("medications", [])
+                if medications:
+                    med_text = f"Medications from {doc_info['document_date']}:\n"
+                    for med in medications:
+                        med_text += f"  - {med.get('name', 'Unknown')}: {med.get('dosage', 'N/A')} ({med.get('frequency', 'N/A')})\n"
+                    context_parts.append(med_text)
+                
+                diagnoses = extracted.get("diagnoses", [])
+                if diagnoses:
+                    diag_text = f"Diagnoses from {doc_info['document_date']}:\n"
+                    for diag in diagnoses:
+                        diag_text += f"  - {diag.get('condition', 'Unknown')}\n"
+                    context_parts.append(diag_text)
+                
+                findings = extracted.get("findings", [])
+                if findings:
+                    findings_text = f"Findings from {doc_info['document_date']} ({doc_info['category']}):\n"
+                    for finding in findings[:10]:
+                        if isinstance(finding, dict):
+                            findings_text += f"  - {finding.get('description', str(finding))}\n"
+                        else:
+                            findings_text += f"  - {finding}\n"
+                    context_parts.append(findings_text)
+                
+                vaccinations = extracted.get("vaccinations", [])
+                if vaccinations:
+                    vac_text = f"Vaccinations from {doc_info['document_date']}:\n"
+                    for vac in vaccinations:
+                        vac_text += f"  - {vac.get('vaccine', 'Unknown')} ({vac.get('date', 'N/A')})\n"
+                    context_parts.append(vac_text)
+                
+                sources.append({"doc_id": doc_info["id"], "doc_name": doc_info["name"], "category": doc_info["category"], "analyzed": True})
+            else:
+                context_parts.append(f"Document: {doc_info['name']} (Category: {doc_info['category']}, Date: {doc_info['document_date']}) - Not yet analyzed")
+                sources.append({"doc_id": doc_info["id"], "doc_name": doc_info["name"], "category": doc_info["category"], "analyzed": False})
     
     # Get health predictions from summary
     try:
@@ -655,7 +869,7 @@ async def chat_with_medical_advisor(db, user_id: str, message: str) -> dict:
     logger.info(f"[ANALYSIS] Processing chat message from user: {user_id}")
     
     # Build context from user's documents
-    context, sources = await build_chatbot_context(db, user_id)
+    context, sources = await build_chatbot_context(db, user_id, message)
     
     # Get user profile for additional context
     from bson import ObjectId
@@ -684,25 +898,27 @@ async def chat_with_medical_advisor(db, user_id: str, message: str) -> dict:
         context = "No medical documents have been uploaded yet."
     
     # Build the prompt with user profile
-    system_prompt = f"""You are HealthSync, a knowledgeable and helpful medical health assistant. You MUST follow these rules strictly:
+    system_prompt = f"""You are HealthSync, a knowledgeable and empathetic medical health assistant with clinical reasoning capabilities. You MUST follow these rules strictly:
 
 RULES:
-1. When the user asks about their health, ALWAYS use their actual lab values from their documents. Give specific numbers, not generic information.
-2. For each metric you discuss, include: what the value means, whether it's normal/abnormal, and what actions they should consider.
-3. Format your responses with: Summary (1-2 sentences), Key findings (bullet points), Specific recommendations, When to see a doctor.
-4. If a metric is out of range, explain WHY it matters and suggest concrete next steps. Don't just say "consult your doctor" - give actionable advice.
-5. Never be vague. Give specific numbers and reference ranges.
-6. Reference the user's actual values from their documents, not generic information.
-7. Always consider their conditions (if any), age, and gender when giving advice.
-8. You ARE allowed and ENCOURAGED to give health advice based on the provided documents.
-9. If the user asks about a condition they have, explain it in context of their own lab results.
-10. End every response with: "Consult your healthcare provider for personalized medical advice."
+1. CLINICAL REASONING: For each abnormal lab value, explain the clinical significance - why this value matters, what it could indicate, and how it relates to the user's known conditions.
+2. Use actual lab values from the provided documents. Give specific numbers with reference ranges, not generic information.
+3. For each metric, include: what the value means, whether it's normal/abnormal, and what clinical actions to consider.
+4. Format responses with: Brief Summary, Clinical Findings (explain WHY values matter), Specific Recommendations, When to Consult a Provider.
+5. If a metric is out of range, explain the pathophysiology - what this could mean for their health.
+6. EMPATHETIC COMMUNICATION: Acknowledge concerns empathetically. Use phrases like "I understand this may be concerning" or "It's normal to feel concerned about..."
+7. Never be vague. Provide specific numbers, reference ranges, and actionable next steps.
+8. Reference the user's actual values, conditions, and medications from their documents.
+9. Consider their age, gender, and existing conditions when giving advice.
+10. You ARE allowed and ENCOURAGED to give health advice based on the provided documents.
+11. If discussing a condition, explain it in the context of their own lab results and trends.
+12. End every response with: "Consult your healthcare provider for personalized medical advice. This information is for educational purposes only and does not replace professional medical care."
 
-IMPORTANT: Do not say "I don't have enough information" or "I can't see your documents" - you have access to their medical data. Use it to give specific, actionable advice.
+IMPORTANT: Do not say "I don't have enough information" - you have access to their medical data. Use it to give specific, clinically relevant advice.
 
-Keep responses concise but informative (max 300 words). Use markdown formatting with bullet points and headings where helpful.
+Keep responses concise but informative (max 350 words). Use markdown formatting with bullet points and clear sections.
 
-{profile_info}The user's medical data:
+{profile_info}The user's relevant medical data:
 """ + context
 
     try:

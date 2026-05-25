@@ -3,7 +3,7 @@ import asyncio
 from app.services.task_queue import (
     create_analysis_task, get_pending_tasks, update_task_status, get_task_status, delete_user_tasks
 )
-from app.services.analysis import analyze_document, save_analysis_result
+from app.services.analysis import analyze_document, save_analysis_result, generate_chunks_from_analysis, save_document_chunks
 from app.services.storage import get_file_path, download_s3_file
 
 logger = logging.getLogger("medical-records-app")
@@ -49,6 +49,11 @@ async def process_task(db, task: dict):
         if analysis_data.get("extracted_data", {}).get("summary") != "Analysis skipped - API key missing":
             await save_analysis_result(db, analysis_data)
             logger.info(f"[WORKER] Analysis result saved for document {document_id}")
+            
+            chunks = await generate_chunks_from_analysis(analysis_data)
+            if chunks:
+                await save_document_chunks(db, chunks)
+                logger.info(f"[WORKER] Document chunks generated and saved for document {document_id}")
         
         await update_task_status(db, task_id, "completed", result={"document_id": document_id})
         logger.info(f"[WORKER] Task {task_id} completed successfully")

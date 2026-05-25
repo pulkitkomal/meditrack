@@ -59,6 +59,11 @@ The app features a premium, clean design inspired by Apple Health:
 
 ## Recent Updates
 
+- **Semantic Search for Chatbot**: AI-powered medical advisor now uses sentence-transformers embeddings with cross-encoder reranking for highly relevant context retrieval
+- **Improved PDF Processing**: Added poppler-utils (pdftoppm/pdftotext) as primary PDF engine with pymupdf fallback for better compatibility
+- **S3 Document Extraction**: Documents stored on S3 are now downloaded locally for text extraction and analysis
+- **Embeddings Backfill Script**: `update_embeddings.py` to generate embeddings for existing documents
+- **Clinical Reasoning Prompts**: Enhanced chatbot prompts with clinical reasoning, empathetic communication, and pathophysiological explanations
 - **PWA Support**: Install as a standalone app on mobile and desktop
 - **Original Document Viewer**: View original PDF/image files directly in the app
 - **Bug Fixes**: Fixed null status handling in lab values, improved document loading

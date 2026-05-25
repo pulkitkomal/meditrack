@@ -55,3 +55,10 @@ class AnalysisResult(BaseModel):
     extracted_data: ExtractedData
     chatbot_context: ChatbotContext
     risk_assessment: RiskAssessment
+
+class DocumentChunk(BaseModel):
+    user_id: str
+    document_id: str
+    chunk_type: str
+    content: str
+    source_document: Optional[str] = None

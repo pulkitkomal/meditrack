@@ -110,11 +110,24 @@ async def download_s3_file(s3_key: str, local_path: str = None):
     if not s3:
         return None
     try:
+        response = s3.get_object(Bucket=settings.AWS_S3_BUCKET, Key=s3_key)
+        content = response["Body"].read()
+        content_size = len(content)
+        logger.info(f"[STORAGE] Read {content_size} bytes from S3: {s3_key}")
+
+        if content_size == 0:
+            logger.warning(f"[STORAGE] S3 object is empty: {s3_key}")
+            return None
+
         if local_path is None:
-            fd, local_path = tempfile.mkstemp(suffix=Path(s3_key).suffix)
-            os.close(fd)
-        s3.download_file(settings.AWS_S3_BUCKET, s3_key, local_path)
-        logger.info(f"[STORAGE] Downloaded S3 file to {local_path}")
+            f = tempfile.NamedTemporaryFile(delete=False, suffix=Path(s3_key).suffix)
+            local_path = f.name
+            f.close()
+
+        with open(local_path, "wb") as f:
+            f.write(content)
+
+        logger.info(f"[STORAGE] Downloaded S3 file to {local_path} (size: {content_size} bytes)")
         return local_path
     except Exception as e:
         logger.warning(f"[STORAGE] Failed to download S3 file: {e}")

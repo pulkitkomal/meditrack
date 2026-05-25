@@ -3,7 +3,7 @@ import re
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from app.oauth2 import oauth2_scheme
 from app.models.document import DocumentUpload, ALLOWED_CATEGORIES
-from app.services.storage import save_file, validate_file
+from app.services.storage import save_file, validate_file, download_s3_file
 from app.services.analysis import extract_text_from_pdf
 from app.utils.security import get_current_user
 from bson import ObjectId
@@ -63,6 +63,14 @@ async def upload_document(
     logger.info(f"[UPLOAD] File saved successfully: {file_info}")
     
     file_path_str = str(file_info["file_path"])
+    
+    # Download S3 file locally for text extraction if needed
+    storage_type = file_info.get("storage_type", "local")
+    local_temp_path = None
+    if storage_type == "s3":
+        local_temp_path = await download_s3_file(file_path_str)
+    extract_path = local_temp_path if local_temp_path else file_path_str
+    
     parsed_date = None
     
     if document_date:
@@ -74,9 +82,9 @@ async def upload_document(
             parsed_date = None
     else:
         logger.info(f"[UPLOAD] No document date provided, attempting to extract from file...")
-        if file_path_str.lower().endswith(('.pdf', '.jpg', '.jpeg', '.png')):
+        if extract_path.lower().endswith(('.pdf', '.jpg', '.jpeg', '.png')):
             try:
-                text = extract_text_from_pdf(file_path_str) if file_path_str.lower().endswith('.pdf') else ""
+                text = extract_text_from_pdf(extract_path) if extract_path.lower().endswith('.pdf') else ""
                 if text:
                     extracted_date = extract_date_from_text(text)
                     if extracted_date:
@@ -104,7 +112,7 @@ async def upload_document(
     # Generate predicted title
     try:
         from app.services.analysis import generate_document_title
-        predicted_title = await generate_document_title(file_path_str, category)
+        predicted_title = await generate_document_title(extract_path, category)
         if predicted_title:
             doc_dict["predicted_title"] = predicted_title
             logger.info(f"[UPLOAD] Generated predicted title: {predicted_title}")
@@ -159,10 +167,17 @@ async def bulk_upload_documents(
             file_info = await save_file(file, str(user["_id"]), category)
             file_path_str = str(file_info["file_path"])
             
+            # Download S3 file locally for text extraction if needed
+            storage_type = file_info.get("storage_type", "local")
+            local_temp_path = None
+            if storage_type == "s3":
+                local_temp_path = await download_s3_file(file_path_str)
+            extract_path = local_temp_path if local_temp_path else file_path_str
+            
             parsed_date = datetime.utcnow()
-            if file_path_str.lower().endswith('.pdf'):
+            if extract_path.lower().endswith('.pdf'):
                 try:
-                    text = extract_text_from_pdf(file_path_str)
+                    text = extract_text_from_pdf(extract_path)
                     if text:
                         extracted_date = extract_date_from_text(text)
                         if extracted_date:
