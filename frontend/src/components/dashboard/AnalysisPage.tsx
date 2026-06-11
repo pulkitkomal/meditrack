@@ -99,7 +99,7 @@ const AnalysisPage = () => {
             <div>
               <h1 className="text-xl font-bold text-gray-800">Analysis Details</h1>
               <p className="text-sm text-gray-500">
-                {analysis.category} • {formatDate(analysis.analysis_date || analysis.document_date)}
+                {analysis.category} • {formatDate(analysis.document_date || analysis.analysis_date)}
               </p>
             </div>
           </div>
