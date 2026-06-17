@@ -177,7 +177,7 @@ const ReadingsTab = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {error && (
-        <div className="p-4 bg-red-50 text-red-600 rounded-xl">{error}</div>
+        <div className="p-4 bg-red-50 text-red-600 rounded-glass">{error}</div>
       )}
 
       {/* Vitals Overview */}

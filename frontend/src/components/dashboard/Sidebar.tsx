@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 interface SidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
@@ -15,50 +17,34 @@ const navItems = [
 const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProps) => {
   return (
     <>
-      {/* Mobile Overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 md:hidden"
           onClick={onClose}
         />
       )}
       
-      {/* Sidebar */}
-      <div className={`
-        fixed md:static inset-y-0 left-0 z-50
-        w-64 md:w-20 bg-white md:bg-transparent
-        border-r md:border-r-0 border-gray-200
-        transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        flex flex-col
-        md:border-r-0
-      `}>
-        {/* Logo - Desktop only */}
-        <div className="hidden md:flex items-center justify-center h-16 border-b border-gray-200">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Mobile Logo */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-4 border-b border-gray-200">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+      <div className={cn(
+        "fixed md:static inset-y-0 left-0 z-50",
+        "w-72 md:w-64",
+        "transform transition-transform duration-300 ease-in-out",
+        isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+        "flex flex-col",
+        "glass-surface-xl rounded-none md:rounded-r-glass-xl border-l-0 md:border-l border-glass-border m-0 md:my-2 md:ml-2"
+      )}>
+        <div className="flex items-center gap-3 px-5 py-5 border-b border-glass-border-subtle">
+          <div className="w-10 h-10 bg-teal-600 rounded-glass flex items-center justify-center shadow-glass">
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </div>
           <div>
-            <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              HealthSync
-            </span>
-            <p className="text-xs text-gray-400">Personal Health Records</p>
+            <h1 className="text-lg font-bold text-slate-800">HealthSync</h1>
+            <p className="text-xs text-slate-400">Personal Health</p>
           </div>
         </div>
 
-        {/* Nav Items */}
-        <nav className="flex-1 py-4">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -66,26 +52,31 @@ const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }: SidebarProps) => {
                 onTabChange(item.id);
                 onClose();
               }}
-              className={`
-                w-full flex items-center gap-3 px-4 md:justify-center py-3
-                transition-colors duration-200
-                ${activeTab === item.id 
-                  ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 border-r-2 md:border-r-0 md:border-b-2 border-blue-500' 
-                  : 'text-gray-600 hover:bg-gray-50'
-                }
-              `}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-glass text-sm font-medium transition-all duration-200",
+                activeTab === item.id 
+                  ? "bg-glass-tint-hover text-teal-700 shadow-glass-inset" 
+                  : "text-slate-500 hover:bg-glass-tint hover:text-slate-700"
+              )}
             >
               <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
               </svg>
-              <span className="hidden md:hidden lg:inline text-sm font-medium">{item.label}</span>
+              {item.label}
             </button>
           ))}
         </nav>
 
-        {/* User section - Mobile only */}
-        <div className="md:hidden border-t border-gray-200 p-4">
-          <p className="text-xs text-gray-500">HealthSync - Personal Health Records</p>
+        <div className="p-3 border-t border-glass-border-subtle">
+          <div className="flex items-center gap-3 p-3 rounded-glass bg-glass-tint">
+            <div className="w-9 h-9 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold text-sm">
+              H
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-slate-800 truncate">HealthSync</p>
+              <p className="text-xs text-slate-400">v1.0</p>
+            </div>
+          </div>
         </div>
       </div>
     </>

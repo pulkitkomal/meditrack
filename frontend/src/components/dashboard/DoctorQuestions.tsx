@@ -49,7 +49,7 @@ export const DoctorQuestions: React.FC<DoctorQuestionsProps> = ({ questions }) =
       <CardContent className="pt-4">
         <div className="space-y-3">
           {questions.map((q, idx) => (
-            <div key={idx} className="p-4 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl border border-cyan-100 flex justify-between items-start group hover:shadow-md transition-shadow">
+            <div key={idx} className="p-4 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-glass border border-cyan-100 flex justify-between items-start group hover:shadow-md transition-shadow">
               <p className="text-sm text-gray-700 flex-1">{q}</p>
               <button 
                 onClick={() => {

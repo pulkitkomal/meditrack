@@ -28,7 +28,7 @@ export const HealthScore: React.FC<HealthScoreProps> = ({ score }) => {
   const bgGradient = getBgGradient(score);
 
   return (
-    <div className={`p-6 rounded-xl bg-gradient-to-br ${bgGradient} border border-gray-100 shadow-lg`}>
+    <div className={`p-6 rounded-glass bg-gradient-to-br ${bgGradient} border border-gray-100 shadow-lg`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold text-gray-800">Health Score</h3>
         <span className="text-2xl">{status.icon}</span>

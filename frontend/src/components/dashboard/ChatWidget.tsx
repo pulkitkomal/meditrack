@@ -139,7 +139,7 @@ const ChatWidget = ({ isOpen, onToggle, userConditions = [] }: ChatWidgetProps) 
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-[380px] h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-50">
+    <div className="fixed bottom-6 right-6 w-[380px] h-[500px] glass-card shadow-2xl border border-glass-border-subtle flex flex-col z-50">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 bg-teal-600 rounded-t-2xl">
         <div className="flex items-center gap-3">
@@ -176,7 +176,7 @@ const ChatWidget = ({ isOpen, onToggle, userConditions = [] }: ChatWidgetProps) 
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm ${
+              className={`max-w-[85%] px-4 py-3 rounded-glass-lg text-sm ${
                 msg.role === "user"
                   ? "bg-teal-600 text-white rounded-br-lg"
                   : "bg-slate-100 text-slate-700 rounded-bl-lg"
@@ -200,7 +200,7 @@ const ChatWidget = ({ isOpen, onToggle, userConditions = [] }: ChatWidgetProps) 
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-slate-100 px-4 py-3 rounded-2xl rounded-bl-lg">
+            <div className="bg-slate-100 px-4 py-3 rounded-glass-lg rounded-bl-lg">
               <div className="flex gap-1.5">
                 <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
                 <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
@@ -242,7 +242,7 @@ const ChatWidget = ({ isOpen, onToggle, userConditions = [] }: ChatWidgetProps) 
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyPress}
             placeholder="Ask about your health..."
-            className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+            className="flex-1 px-4 py-2.5 border border-glass-border-subtle rounded-glass text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
             disabled={loading}
           />
           <button

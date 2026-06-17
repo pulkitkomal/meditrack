@@ -126,10 +126,10 @@ const ChatPage = ({ userConditions = [] }: ChatPageProps) => {
   const isFirstBotMessage = messages.filter(m => m.role === "bot").length <= 1;
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-[#f2f2f7]">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-4 bg-white border-b border-slate-100">
-        <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-50 rounded-xl">
+        <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-50 rounded-glass">
           <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -161,7 +161,7 @@ const ChatPage = ({ userConditions = [] }: ChatPageProps) => {
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm ${
+              className={`max-w-[85%] px-4 py-3 rounded-glass-lg text-sm ${
                 msg.role === "user"
                   ? "bg-teal-600 text-white rounded-br-lg"
                   : "bg-slate-100 text-slate-700 rounded-bl-lg"
@@ -191,7 +191,7 @@ const ChatPage = ({ userConditions = [] }: ChatPageProps) => {
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-slate-100 px-4 py-3 rounded-2xl rounded-bl-lg">
+            <div className="bg-slate-100 px-4 py-3 rounded-glass-lg rounded-bl-lg">
               <div className="flex gap-1.5">
                 <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
                 <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
@@ -229,7 +229,7 @@ const ChatPage = ({ userConditions = [] }: ChatPageProps) => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyPress}
             placeholder="Ask about your health..."
-            className="flex-1 px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+            className="flex-1 px-4 py-3 border border-glass-border-subtle rounded-glass text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
             disabled={loading}
           />
           <button

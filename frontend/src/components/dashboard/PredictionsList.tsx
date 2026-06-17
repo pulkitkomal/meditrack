@@ -51,7 +51,7 @@ export const PredictionsList: React.FC<PredictionsListProps> = ({ predictions })
       <CardContent className="pt-4">
         <div className="space-y-4">
           {predictions.map((p, idx) => (
-            <div key={idx} className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-100">
+            <div key={idx} className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-glass border border-amber-100">
               <div className="flex justify-between items-center mb-2">
                 <h4 className="font-semibold text-gray-800">{p.condition}</h4>
                 <div className="flex items-center gap-2">

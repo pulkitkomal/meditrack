@@ -95,7 +95,7 @@ const MetricCarousel = ({ card }: { card: MetricCard }) => {
 
   if (readings.length === 0) {
     return (
-      <div className="p-4 rounded-xl border bg-slate-50 border-slate-200 min-h-[120px] flex flex-col justify-center">
+      <div className="p-4 rounded-glass border bg-glass-tint border-glass-border-subtle min-h-[120px] flex flex-col justify-center">
         <p className="text-xs text-slate-500 mb-1">{card.name}</p>
         <p className="text-lg font-bold text-slate-400"></p>
       </div>
@@ -106,7 +106,7 @@ const MetricCarousel = ({ card }: { card: MetricCard }) => {
   const statusClass = getStatusColors(reading.status);
 
   return (
-    <div className={`p-4 rounded-xl border min-h-[120px] flex flex-col justify-between ${statusClass}`}>
+    <div className={`p-4 rounded-glass border min-h-[120px] flex flex-col justify-between ${statusClass}`}>
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm font-medium text-slate-700">{card.name}</p>
@@ -190,7 +190,7 @@ const QuickActionCard = ({ icon, title, description, action, onClick }: { icon: 
 );
 
 const AnalysisItem = ({ analysis }: { analysis: Analysis }) => (
-  <Link to={`/analysis/${analysis.document_id}`} className="flex items-center gap-4 p-4 rounded-xl hover:bg-slate-50 transition-colors">
+  <Link to={`/analysis/${analysis.document_id}`} className="flex items-center gap-4 p-4 rounded-glass hover:bg-glass-tint transition-colors">
     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
       analysis.category === 'lab_results' ? 'bg-blue-50' :
       analysis.category === 'prescriptions' ? 'bg-purple-50' :

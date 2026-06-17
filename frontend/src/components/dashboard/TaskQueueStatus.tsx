@@ -69,7 +69,7 @@ const deleteTask = async (taskId: string) => {
 
   if (loading) {
     return (
-      <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-blue-100">
+      <div className="bg-white/90 backdrop-blur-sm rounded-glass p-6 shadow-lg border border-blue-100">
         <div className="flex items-center justify-center h-32">
           <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
@@ -98,7 +98,7 @@ const deleteTask = async (taskId: string) => {
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100 overflow-hidden">
+    <div className="bg-white/90 backdrop-blur-sm rounded-glass shadow-lg border border-blue-100 overflow-hidden">
       <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-amber-500 to-orange-600">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

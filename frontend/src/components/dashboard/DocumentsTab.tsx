@@ -145,7 +145,7 @@ const DocumentsTab = () => {
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value)}
-              className="px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-600"
+              className="px-2 py-1.5 text-xs border border-glass-border-subtle rounded-lg bg-white text-slate-600"
             >
               <option value="">All Dates</option>
               <option value={`${new Date().toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>Today</option>
@@ -159,7 +159,7 @@ const DocumentsTab = () => {
             {/* Left Arrow - Desktop Only */}
             <button 
               onClick={() => scrollCarousel('left')}
-              className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-slate-200 rounded-full items-center justify-center shadow-md hover:bg-slate-50"
+              className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-glass-border-subtle rounded-full items-center justify-center shadow-md hover:bg-slate-50"
             >
               <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -170,7 +170,7 @@ const DocumentsTab = () => {
               {docs.map((doc) => (
               <div 
                 key={doc.id} 
-                className="flex-shrink-0 w-56 p-4 bg-slate-50 rounded-xl border border-slate-100"
+                className="flex-shrink-0 w-56 p-4 bg-glass-tint rounded-glass border border-slate-100"
               >
                 <div className="flex items-center justify-between mb-2">
                   {doc.analysis_id ? (
@@ -217,7 +217,7 @@ const DocumentsTab = () => {
             {/* Right Arrow - Desktop Only */}
             <button 
               onClick={() => scrollCarousel('right')}
-              className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-slate-200 rounded-full items-center justify-center shadow-md hover:bg-slate-50"
+              className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-glass-border-subtle rounded-full items-center justify-center shadow-md hover:bg-slate-50"
             >
               <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

@@ -102,60 +102,62 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
 
   if (activeTab === "chat" && isMobile) {
     return (
-      <div className="h-screen flex flex-col bg-white">
+      <div className="h-screen flex flex-col bg-[#f2f2f7]">
         <ChatPage userConditions={user.medical_conditions || []} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[#f2f2f7] flex w-full max-w-full overflow-x-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 bg-white border-r border-slate-100 flex-col fixed h-screen left-0 top-0 z-40">
-        {/* Logo */}
-        <div className="p-6 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-slate-800">HealthSync</h1>
-              <p className="text-xs text-slate-400">Personal Health</p>
+      <aside className="hidden lg:flex flex-col fixed h-screen left-0 top-0 z-40">
+        <div className="glass-surface-xl rounded-none rounded-r-glass-xl border-l-0 border-glass-border my-2 ml-2 h-[calc(100vh-16px)] w-64 flex flex-col">
+          {/* Logo */}
+          <div className="p-5 border-b border-glass-border-subtle">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-teal-600 rounded-glass flex items-center justify-center shadow-glass">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-slate-800">HealthSync</h1>
+                <p className="text-xs text-slate-400">Personal Health</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleTabChange(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                activeTab === item.id 
-                  ? "bg-teal-50 text-teal-700" 
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-              }`}
-            >
-              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
-              </svg>
-              {item.label}
-            </button>
-          ))}
-        </nav>
+          {/* Navigation */}
+          <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => handleTabChange(item.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-glass text-sm font-medium transition-all duration-200 ${
+                  activeTab === item.id 
+                    ? "bg-glass-tint-hover text-teal-700 shadow-glass-inset" 
+                    : "text-slate-500 hover:bg-glass-tint hover:text-slate-700"
+                }`}
+              >
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
+                </svg>
+                {item.label}
+              </button>
+            ))}
+          </nav>
 
-        {/* User Section */}
-        <div className="p-4 border-t border-slate-100">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
-            <div className="w-9 h-9 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold text-sm">
-              {user.first_name?.[0]?.toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-800 truncate">{user.first_name}</p>
-              <button onClick={logout} className="text-xs text-slate-400 hover:text-red-500">Sign out</button>
+          {/* User Section */}
+          <div className="p-3 border-t border-glass-border-subtle">
+            <div className="flex items-center gap-3 p-3 rounded-glass bg-glass-tint">
+              <div className="w-9 h-9 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold text-sm">
+                {user.first_name?.[0]?.toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-800 truncate">{user.first_name}</p>
+                <button onClick={logout} className="text-xs text-slate-400 hover:text-red-500">Sign out</button>
+              </div>
             </div>
           </div>
         </div>
@@ -164,56 +166,58 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/20 z-30 lg:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-64 min-h-screen w-full max-w-full overflow-x-hidden">
+      <div className="flex-1 flex flex-col lg:ml-[272px] min-h-screen w-full max-w-full overflow-x-hidden">
         {/* Mobile Header */}
-        <header className="lg:hidden bg-white border-b border-slate-100 sticky top-0 z-20">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
+        <header className="lg:hidden sticky top-0 z-20">
+          <div className="glass-surface-xl rounded-none mx-0 mt-0 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-teal-600 rounded-glass-sm flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </div>
+                <span className="font-bold text-slate-800">HealthSync</span>
               </div>
-              <span className="font-bold text-slate-800">HealthSync</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button 
-                onClick={() => isMobile ? setActiveTab("chat") : setChatOpen(true)}
-                className="p-2 hover:bg-slate-50 rounded-lg"
-                title="Assistant"
-              >
-                <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              </button>
-              <button 
-                onClick={() => setActiveTab("profile")}
-                className="p-2 hover:bg-slate-50 rounded-lg"
-              >
-                <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </button>
-              <button 
-                onClick={logout}
-                className="p-2 hover:bg-slate-50 rounded-lg"
-              >
-                <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={() => isMobile ? setActiveTab("chat") : setChatOpen(true)}
+                  className="p-2 hover:bg-glass-tint rounded-glass-sm"
+                  title="Assistant"
+                >
+                  <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </button>
+                <button 
+                  onClick={() => setActiveTab("profile")}
+                  className="p-2 hover:bg-glass-tint rounded-glass-sm"
+                >
+                  <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </button>
+                <button 
+                  onClick={logout}
+                  className="p-2 hover:bg-glass-tint rounded-glass-sm"
+                >
+                  <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </header>
 
         {/* Desktop Header */}
-        <header className="hidden md:flex items-center justify-between px-8 py-4 bg-white border-b border-slate-100">
+        <header className="hidden md:flex items-center justify-between px-8 py-4">
           <div>
             <h1 className="text-xl font-bold text-slate-800">
               {activeTab === "overview" && "Health at a Glance"}
@@ -244,13 +248,15 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
             {renderTabContent()}
           </div>
           
-          {/* Footer - Both Mobile & Desktop */}
-          <div className="px-6 py-6 text-center border-t border-slate-100">
-            <p className="text-sm text-slate-400">© {new Date().getFullYear()} HealthSync. All rights reserved.</p>
-            <div className="flex justify-center gap-4 mt-3">
-              <button onClick={() => setShowTerms(true)} className="text-sm text-slate-500 hover:text-teal-600 transition-colors">Terms & Conditions</button>
-              <span className="text-slate-200">|</span>
-              <button onClick={() => setShowPrivacy(true)} className="text-sm text-slate-500 hover:text-teal-600 transition-colors">Privacy Policy</button>
+          {/* Footer */}
+          <div className="px-6 py-6 text-center">
+            <div className="glass-surface-sm inline-block px-6 py-4 mx-auto">
+              <p className="text-sm text-slate-400">© {new Date().getFullYear()} HealthSync. All rights reserved.</p>
+              <div className="flex justify-center gap-4 mt-3">
+                <button onClick={() => setShowTerms(true)} className="text-sm text-slate-500 hover:text-teal-600 transition-colors">Terms & Conditions</button>
+                <span className="text-slate-200">|</span>
+                <button onClick={() => setShowPrivacy(true)} className="text-sm text-slate-500 hover:text-teal-600 transition-colors">Privacy Policy</button>
+              </div>
             </div>
           </div>
         </main>
@@ -264,11 +270,11 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
 
       {/* Terms Modal */}
       {showTerms && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="glass-surface-xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-glass-elevated">
+            <div className="flex items-center justify-between p-5 border-b border-glass-border-subtle">
               <h2 className="text-xl font-bold text-slate-800">Terms & Conditions</h2>
-              <button onClick={() => setShowTerms(false)} className="p-2 hover:bg-slate-100 rounded-xl">
+              <button onClick={() => setShowTerms(false)} className="p-2 hover:bg-glass-tint rounded-glass-sm">
                 <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
@@ -317,11 +323,11 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
 
       {/* Privacy Modal */}
       {showPrivacy && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="glass-surface-xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-glass-elevated">
+            <div className="flex items-center justify-between p-5 border-b border-glass-border-subtle">
               <h2 className="text-xl font-bold text-slate-800">Privacy Policy</h2>
-              <button onClick={() => setShowPrivacy(false)} className="p-2 hover:bg-slate-100 rounded-xl">
+              <button onClick={() => setShowPrivacy(false)} className="p-2 hover:bg-glass-tint rounded-glass-sm">
                 <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>

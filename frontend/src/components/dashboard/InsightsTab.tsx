@@ -108,7 +108,7 @@ const MetricCarousel = ({ card }: { card: MetricCard }) => {
 
   if (readings.length === 0) {
     return (
-      <div className="p-4 rounded-xl border bg-slate-50 border-slate-200 min-h-[120px] flex flex-col justify-center">
+      <div className="p-4 rounded-glass border bg-glass-tint border-glass-border-subtle min-h-[120px] flex flex-col justify-center">
         <p className="text-xs text-slate-500 mb-1">{card.name}</p>
         <p className="text-lg font-bold text-slate-400"></p>
       </div>
@@ -119,7 +119,7 @@ const MetricCarousel = ({ card }: { card: MetricCard }) => {
   const statusClass = getStatusColors(reading.status);
 
   return (
-    <div className={`p-4 rounded-xl border min-h-[120px] flex flex-col justify-between ${statusClass}`}>
+    <div className={`p-4 rounded-glass border min-h-[120px] flex flex-col justify-between ${statusClass}`}>
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm font-medium text-slate-700">{card.name}</p>
@@ -427,7 +427,7 @@ const InsightsTab = ({ userConditions = [] }: InsightsTabProps) => {
                   critical: "text-red-800"
                 };
                 return (
-                  <div key={idx} className={`p-4 rounded-xl border ${statusColors[metric.status] || statusColors.normal}`}>
+                  <div key={idx} className={`p-4 rounded-glass border ${statusColors[metric.status] || statusColors.normal}`}>
                     <p className="text-xs text-slate-500 mb-1">{metric.display_name}</p>
                     <p className="text-2xl font-bold text-slate-800">
                       {metric.value} <span className="text-sm font-normal text-slate-500">{metric.unit}</span>
@@ -555,7 +555,7 @@ const InsightsTab = ({ userConditions = [] }: InsightsTabProps) => {
           <h3 className="font-semibold text-slate-800 mb-4">Lab Values Trends</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {trends.slice(0, 6).map((trend, i) => (
-              <div key={i} className="p-4 rounded-xl bg-slate-50">
+              <div key={i} className="p-4 rounded-glass bg-glass-tint">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h4 className="font-semibold text-slate-800">{trend.test}</h4>

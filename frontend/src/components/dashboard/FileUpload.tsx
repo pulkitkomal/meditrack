@@ -74,7 +74,7 @@ const FileUpload = ({ onUpload }: { onUpload: () => void }) => {
           className="input-premium file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
         />
       </div>
-      {error && <p className="text-red-500 text-sm bg-red-50 p-3 rounded-xl">{error}</p>}
+      {error && <p className="text-red-500 text-sm bg-red-50 p-3 rounded-glass">{error}</p>}
       <Button type="submit" disabled={uploading} className="w-full">
         {uploading ? "Uploading..." : "Upload Document"}
       </Button>
@@ -156,7 +156,7 @@ export const BulkUpload = ({ onUpload }: BulkUploadProps) => {
         <div
           onDrop={handleDrop}
           onDragOver={e => e.preventDefault()}
-          className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-teal-300 hover:bg-teal-50/30 transition-colors cursor-pointer"
+          className="border-2 border-dashed border-glass-border-subtle rounded-glass p-6 text-center hover:border-teal-300 hover:bg-teal-50/30 transition-colors cursor-pointer"
         >
           <input
             type="file"
@@ -187,7 +187,7 @@ export const BulkUpload = ({ onUpload }: BulkUploadProps) => {
       {files.length > 0 && (
         <div className="max-h-40 overflow-y-auto space-y-2">
           {files.map((file, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            <div key={index} className="flex items-center justify-between p-3 bg-glass-tint rounded-glass">
               <div className="flex items-center gap-2 overflow-hidden">
                 <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -209,7 +209,7 @@ export const BulkUpload = ({ onUpload }: BulkUploadProps) => {
       )}
       
       {results && (
-        <div className={`p-3 rounded-xl text-sm ${results.errors > 0 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
+        <div className={`p-3 rounded-glass text-sm ${results.errors > 0 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
           {results.uploaded > 0 && <span className="font-medium">{results.uploaded} files uploaded</span>}
           {results.errors > 0 && <span className="ml-2">({results.errors} failed)</span>}
         </div>

@@ -33,14 +33,14 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
     }
   };
 
-  const inputStyle = "w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all outline-none";
+  const inputStyle = "w-full px-4 py-3.5 rounded-glass border border-slate-200 bg-glass-light backdrop-blur-[8px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all";
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8 bg-slate-50">
+    <div className="min-h-screen flex items-center justify-center p-8 bg-[#f2f2f7]">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-600/20">
+          <div className="w-16 h-16 bg-teal-600 rounded-glass-xl flex items-center justify-center mx-auto mb-4 shadow-glass-elevated">
             <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
@@ -50,7 +50,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
         </div>
         
         {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-card p-8">
+        <div className="glass-surface-xl p-8">
           <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">
             Create Account
           </h2>
@@ -114,7 +114,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
           </div>
           
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm text-center mb-4">
+            <div className="bg-red-50/80 text-red-600 p-3 rounded-glass text-sm text-center mb-4">
               {error}
             </div>
           )}
@@ -123,7 +123,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
             type="button"
             onClick={doRegister}
             disabled={loading || !form.email || !form.password || !form.first_name || !form.last_name}
-            className="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-lg shadow-teal-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-glass shadow-glass hover:shadow-glass-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Creating Account..." : "Create Account"}
           </button>

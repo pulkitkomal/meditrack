@@ -138,7 +138,7 @@ const AnalysisPage = () => {
         {showExtracted ? (
           <>
           {analysis.extracted_data?.summary && (
-          <Card className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100">
+          <Card className="bg-white/90 backdrop-blur-sm rounded-glass shadow-lg border border-blue-100">
             <CardHeader className="border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -156,7 +156,7 @@ const AnalysisPage = () => {
         )}
 
         {analysis.extracted_data?.lab_values?.length > 0 && (
-          <Card className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100">
+          <Card className="bg-white/90 backdrop-blur-sm rounded-glass shadow-lg border border-blue-100">
             <CardHeader className="border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -225,7 +225,7 @@ const AnalysisPage = () => {
         )}
 
         {analysis.extracted_data?.medications?.length > 0 && (
-          <Card className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100">
+          <Card className="bg-white/90 backdrop-blur-sm rounded-glass shadow-lg border border-blue-100">
             <CardHeader className="border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -263,7 +263,7 @@ const AnalysisPage = () => {
         )}
 
         {analysis.extracted_data?.diagnoses?.length > 0 && (
-          <Card className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100">
+          <Card className="bg-white/90 backdrop-blur-sm rounded-glass shadow-lg border border-blue-100">
             <CardHeader className="border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -300,7 +300,7 @@ const AnalysisPage = () => {
         )}
 
         {(!analysis.extracted_data?.lab_values?.length && !analysis.extracted_data?.medications?.length && !analysis.extracted_data?.diagnoses?.length) && (
-          <Card className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100">
+          <Card className="bg-white/90 backdrop-blur-sm rounded-glass shadow-lg border border-blue-100">
             <CardContent className="py-12 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -316,7 +316,7 @@ const AnalysisPage = () => {
         ) : (
           <>
             {/* Original Document View */}
-            <Card className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100">
+            <Card className="bg-white/90 backdrop-blur-sm rounded-glass shadow-lg border border-blue-100">
               <CardHeader className="border-b border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">

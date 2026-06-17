@@ -4,22 +4,22 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center font-medium transition-all duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center font-semibold transition-all duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-teal-600 hover:bg-teal-700 text-white shadow-sm hover:shadow",
-        secondary: "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200",
-        ghost: "bg-transparent hover:bg-slate-100 text-slate-600",
-        outline: "border border-slate-200 bg-white hover:bg-slate-50 text-slate-700",
-        destructive: "bg-red-500 hover:bg-red-600 text-white",
-        success: "bg-emerald-500 hover:bg-emerald-600 text-white"
+        default: "bg-teal-600 hover:bg-teal-700 text-white shadow-glass hover:shadow-glass-hover rounded-glass",
+        secondary: "glass-surface hover:bg-glass-light-heavy text-slate-700 rounded-glass",
+        ghost: "bg-transparent hover:bg-glass-tint text-slate-600 rounded-glass",
+        outline: "border border-slate-200 bg-glass-light backdrop-blur-[8px] hover:bg-glass-tint text-slate-700 rounded-glass",
+        destructive: "bg-red-500 hover:bg-red-600 text-white rounded-glass",
+        success: "bg-emerald-500 hover:bg-emerald-600 text-white rounded-glass"
       },
       size: {
-        default: "px-5 py-2.5 rounded-xl text-sm",
-        sm: "px-3.5 py-1.5 rounded-lg text-sm",
-        lg: "px-6 py-3 rounded-xl text-base",
-        icon: "p-2.5 rounded-xl"
+        default: "px-5 py-2.5 text-sm",
+        sm: "px-3.5 py-1.5 rounded-glass-sm text-sm",
+        lg: "px-6 py-3 rounded-glass text-base",
+        icon: "p-2.5 rounded-glass"
       }
     },
     defaultVariants: { variant: "default", size: "default" }

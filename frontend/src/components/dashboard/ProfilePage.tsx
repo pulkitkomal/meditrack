@@ -45,7 +45,7 @@ const InputField = ({ label, name, value, onChange, type = "text", placeholder, 
 );
 
 const StatBox = ({ label, value, color }: { label: string; value: string | number; color: string }) => (
-  <div className="p-4 rounded-xl bg-slate-50">
+  <div className="p-4 rounded-glass bg-glass-tint">
     <p className="text-sm text-slate-500">{label}</p>
     <p className={`text-2xl font-bold ${color}`}>{value.toLocaleString()}</p>
   </div>
@@ -196,7 +196,7 @@ const ProfilePage = ({ user, onBack, onUpdate }: ProfilePageProps) => {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-xl">
+        <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-glass">
           <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -218,7 +218,7 @@ const ProfilePage = ({ user, onBack, onUpdate }: ProfilePageProps) => {
           </div>
         </div>
 
-        <div className="mb-6 p-4 bg-slate-50 rounded-xl">
+        <div className="mb-6 p-4 bg-glass-tint rounded-glass">
           <p className="text-sm text-slate-600">
             <span className="font-medium">Name:</span> {user.first_name} {user.last_name}
           </p>
@@ -354,7 +354,7 @@ const ProfilePage = ({ user, onBack, onUpdate }: ProfilePageProps) => {
 
         <div className="space-y-4">
           {!telegramConfig.connected ? (
-            <div className="p-4 bg-blue-50 rounded-xl">
+            <div className="p-4 bg-blue-50 rounded-glass">
               <p className="text-sm text-slate-600 mb-4">
                 Connect Telegram to log glucose & blood pressure readings by sending a message or photo. Get automatic reminders.
               </p>
@@ -364,7 +364,7 @@ const ProfilePage = ({ user, onBack, onUpdate }: ProfilePageProps) => {
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-glass">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
                   <span className="text-sm font-medium text-emerald-700">Connected to Telegram</span>
@@ -392,7 +392,7 @@ const ProfilePage = ({ user, onBack, onUpdate }: ProfilePageProps) => {
                         type="time"
                         value={telegramConfig.notification_times[num - 1] || ""}
                         onChange={(e) => handleNotificationTimeChange(num - 1, e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg"
+                        className="w-full px-3 py-2 text-sm border border-glass-border-subtle rounded-lg"
                       />
                     </div>
                   ))}

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,24 +6,24 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 215.4 16.3% 46.9%;
+    --background: 190 30% 98%;
+    --foreground: 200 8% 35%;
     --card: 0 0% 100%;
-    --card-foreground: 215.4 16.3% 46.9%;
-    --primary: 175 70% 27%;
+    --card-foreground: 200 8% 35%;
+    --primary: 186 60% 30%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 98%;
-    --secondary-foreground: 215.4 16.3% 46.9%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 56.5%;
-    --accent: 175 70% 27%;
+    --secondary: 190 30% 97%;
+    --secondary-foreground: 200 8% 35%;
+    --muted: 190 20% 95%;
+    --muted-foreground: 200 8% 45%;
+    --accent: 186 60% 30%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 175 70% 27%;
-    --radius: 1rem;
+    --border: 200 15% 88%;
+    --input: 200 15% 88%;
+    --ring: 186 60% 30%;
+    --radius: 14px;
   }
 
   * {
@@ -31,50 +31,114 @@
   }
 
   body {
-    @apply bg-white text-slate-600 antialiased;
+    @apply bg-[#f2f2f7] text-[#636366] antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply text-slate-800 font-semibold tracking-tight;
+    @apply text-[#3a3a3c] font-bold tracking-tight text-left;
   }
 }
 
 @layer components {
+  .glass-surface {
+    @apply bg-glass-light backdrop-blur-[16px] backdrop-saturate-[180%] rounded-glass border border-glass-border shadow-glass;
+  }
+
+  .glass-surface-sm {
+    @apply bg-glass-light backdrop-blur-[8px] backdrop-saturate-[160%] rounded-glass-sm border border-glass-border-subtle shadow-soft;
+  }
+
+  .glass-surface-lg {
+    @apply bg-glass-light backdrop-blur-[24px] backdrop-saturate-[200%] rounded-glass-lg border border-glass-border shadow-glass-hover;
+  }
+
+  .glass-surface-xl {
+    @apply bg-glass-light backdrop-blur-[40px] backdrop-saturate-[220%] rounded-glass-xl border border-glass-border shadow-glass-elevated;
+  }
+
+  .glass-surface-tinted {
+    @apply bg-glass-tint backdrop-blur-[16px] backdrop-saturate-[180%] rounded-glass border border-glass-border shadow-glass;
+  }
+
+  .glass-card {
+    @apply glass-surface p-5 hover:shadow-glass-hover transition-all duration-300;
+  }
+
+  .glass-card-sm {
+    @apply glass-surface-sm p-4 transition-all duration-300;
+  }
+
+  .glass-shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-shine::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(255,255,255,0.25) 0%,
+      rgba(255,255,255,0) 50%,
+      rgba(255,255,255,0) 100%
+    );
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  .glass-shine-subtle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(255,255,255,0.15) 0%,
+      rgba(255,255,255,0) 40%
+    );
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  .glass-inset-border {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.24);
+  }
+
   .card-premium {
-    @apply bg-white rounded-2xl p-4 md:p-5 shadow-card hover:shadow-card-hover transition-all duration-300 w-full;
+    @apply glass-card;
   }
 
   .card-premium-subtle {
-    @apply bg-slate-50 rounded-2xl p-5 shadow-sm;
+    @apply glass-surface-sm;
   }
 
   .btn-primary {
-    @apply bg-teal-600 hover:bg-teal-700 text-white font-medium px-5 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow;
+    @apply bg-teal-600 hover:bg-teal-700 text-white font-semibold px-5 py-2.5 rounded-glass transition-all duration-200 active:scale-[0.97] shadow-glass hover:shadow-glass-hover;
   }
 
   .btn-secondary {
-    @apply bg-white hover:bg-slate-50 text-slate-700 font-medium px-5 py-2.5 rounded-xl border border-slate-200 transition-all duration-200 active:scale-[0.98];
+    @apply glass-surface hover:bg-glass-light-heavy text-slate-700 font-medium px-5 py-2.5 rounded-glass transition-all duration-200 active:scale-[0.97];
   }
 
   .btn-ghost {
-    @apply bg-transparent hover:bg-slate-100 text-slate-600 font-medium px-4 py-2 rounded-lg transition-all duration-200;
+    @apply bg-transparent hover:bg-glass-tint text-slate-600 font-medium px-4 py-2 rounded-glass transition-all duration-200;
   }
 
   .chip {
-    @apply inline-flex items-center px-3.5 py-1.5 rounded-full text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer;
+    @apply inline-flex items-center px-3.5 py-1.5 rounded-full text-sm font-medium bg-glass-light text-slate-600 hover:bg-glass-tint transition-colors cursor-pointer border border-glass-border-subtle;
   }
 
   .chip-active {
-    @apply bg-teal-50 text-teal-700 hover:bg-teal-100;
+    @apply bg-glass-tint-hover text-teal-700 hover:bg-glass-tint-hover;
   }
 
   .input-premium {
-    @apply w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all;
+    @apply w-full px-4 py-3 rounded-glass border border-slate-200 bg-glass-light backdrop-blur-[8px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all;
   }
 
   .section-title {
-    @apply text-xl font-semibold text-slate-800 mb-4;
+    @apply text-xl font-bold text-slate-800 mb-4;
   }
 
   .section-subtitle {
@@ -82,7 +146,7 @@
   }
 
   .stat-card {
-    @apply card-premium flex flex-col;
+    @apply glass-card flex flex-col;
   }
 
   .stat-value {
@@ -94,15 +158,15 @@
   }
 
   .nav-item {
-    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all duration-200;
+    @apply flex items-center gap-3 px-4 py-3 rounded-glass text-slate-500 hover:bg-glass-tint hover:text-slate-700 transition-all duration-200;
   }
 
   .nav-item-active {
-    @apply bg-teal-50 text-teal-700 hover:bg-teal-50 hover:text-teal-700;
+    @apply bg-glass-tint-hover text-teal-700 hover:bg-glass-tint-hover;
   }
 
   .divider {
-    @apply h-px bg-slate-200 my-4;
+    @apply h-px bg-slate-200/60 my-4;
   }
 
   .badge {
@@ -110,19 +174,19 @@
   }
 
   .badge-success {
-    @apply bg-emerald-50 text-emerald-700;
+    @apply bg-emerald-50/80 text-emerald-700;
   }
 
   .badge-warning {
-    @apply bg-amber-50 text-amber-700;
+    @apply bg-amber-50/80 text-amber-700;
   }
 
   .badge-error {
-    @apply bg-red-50 text-red-700;
+    @apply bg-red-50/80 text-red-700;
   }
 
   .skeleton {
-    @apply bg-slate-100 rounded-lg animate-shimmer bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 bg-[length:200%_100%];
+    @apply bg-slate-100 rounded-glass animate-shimmer bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 bg-[length:200%_100%];
   }
 }
 
@@ -147,5 +211,9 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  .backdrop-support {
+    -webkit-backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-saturate);
   }
 }

@@ -113,7 +113,7 @@ const Summary = () => {
           {/* Key Metrics or Health Score */}
           <div className="md:col-span-2">
             {summary.latest_metrics && summary.latest_metrics.length > 0 ? (
-              <div className="p-6 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50 border border-gray-100 shadow-lg">
+              <div className="p-6 rounded-glass bg-gradient-to-br from-blue-50 to-purple-50 border border-gray-100 shadow-lg">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-800">Latest Health Metrics</h3>
                   <span className="text-sm text-gray-500">
@@ -129,7 +129,7 @@ const Summary = () => {
                       critical: 'bg-red-200 text-red-800'
                     };
                     return (
-                      <div key={idx} className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                      <div key={idx} className="p-4 bg-white rounded-glass border border-gray-100 shadow-sm">
                         <p className="text-xs text-gray-500 mb-1">{metric.display_name}</p>
                         <p className="text-2xl font-bold text-gray-800">
                           {metric.value} <span className="text-sm font-normal text-gray-500">{metric.unit}</span>
@@ -192,11 +192,11 @@ const Summary = () => {
             </CardHeader>
             <CardContent className="pt-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-xl">
+                <div className="text-center p-4 bg-blue-50 rounded-glass">
                   <p className="text-3xl font-bold text-blue-600">{summary.total_analyses}</p>
                   <p className="text-sm text-gray-500">Total Analyses</p>
                 </div>
-                <div className="text-center p-4 bg-purple-50 rounded-xl">
+                <div className="text-center p-4 bg-purple-50 rounded-glass">
                   <p className="text-3xl font-bold text-purple-600">{summary.predictions.length}</p>
                   <p className="text-sm text-gray-500">Predictions</p>
                 </div>
