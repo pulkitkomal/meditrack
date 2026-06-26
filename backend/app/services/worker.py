@@ -46,14 +46,20 @@ async def process_task(db, task: dict):
         
         analysis_data = await analyze_document(str(file_path), category, user_id, document_id, db)
         
-        if analysis_data.get("extracted_data", {}).get("summary") != "Analysis skipped - API key missing":
-            await save_analysis_result(db, analysis_data)
-            logger.info(f"[WORKER] Analysis result saved for document {document_id}")
-            
-            chunks = await generate_chunks_from_analysis(analysis_data)
-            if chunks:
-                await save_document_chunks(db, chunks)
-                logger.info(f"[WORKER] Document chunks generated and saved for document {document_id}")
+        summary = analysis_data.get("extracted_data", {}).get("summary", "")
+        
+        if summary == "Analysis skipped - API key missing":
+            logger.error(f"[WORKER] Analysis skipped for task {task_id}: OpenAI API key not configured")
+            await update_task_status(db, task_id, "failed", error="OpenAI API key not configured")
+            return False
+        
+        await save_analysis_result(db, analysis_data)
+        logger.info(f"[WORKER] Analysis result saved for document {document_id}")
+        
+        chunks = await generate_chunks_from_analysis(analysis_data)
+        if chunks:
+            await save_document_chunks(db, chunks)
+            logger.info(f"[WORKER] Document chunks generated and saved for document {document_id}")
         
         await update_task_status(db, task_id, "completed", result={"document_id": document_id})
         logger.info(f"[WORKER] Task {task_id} completed successfully")
