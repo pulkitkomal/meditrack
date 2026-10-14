@@ -26,19 +26,6 @@ logger.info("=" * 60)
 async def lifespan(app: FastAPI):
     app.mongo_client = AsyncIOMotorClient(settings.MONGO_URL)
     app.mongo_db = app.mongo_client[settings.MONGO_DB_NAME]
-    
-    import multiprocessing
-    def run_bot_process():
-        import asyncio
-        from app.services.telegram_bot import setup_bot, start_bot
-        bot_app = setup_bot()
-        if bot_app:
-            asyncio.run(start_bot())
-    
-    bot_process = multiprocessing.Process(target=run_bot_process, daemon=True)
-    bot_process.start()
-    logger.info("[TELEGRAM] Bot started in separate process")
-    
     yield
     app.mongo_client.close()
 

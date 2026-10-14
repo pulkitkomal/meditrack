@@ -21,16 +21,16 @@ def get_db():
 async def get_usage_stats(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     logger.info(f"[ANALYSIS-ROUTE] GET /usage - Fetching usage stats")
     user = await get_current_user(token, db)
-    logger.info(f"[ANALYSIS-ROUTE] User: {user.get('email', user['_id'])}")
+    logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}")
     result = await get_user_usage(db, str(user["_id"]))
-    logger.info(f"[ANALYSIS-ROUTE] Usage stats returned: {result}")
+    logger.info(f"[ANALYSIS-ROUTE] Usage stats returned")
     return result
 
 @router.get("/usage/history")
 async def get_usage_history_endpoint(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     logger.info(f"[ANALYSIS-ROUTE] GET /usage/history - Fetching usage history")
     user = await get_current_user(token, db)
-    logger.info(f"[ANALYSIS-ROUTE] User: {user.get('email', user['_id'])}")
+    logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}")
     result = await get_usage_history(db, str(user["_id"]))
     logger.info(f"[ANALYSIS-ROUTE] Usage history returned with {len(result) if isinstance(result, list) else 'N/A'} entries")
     return result
@@ -39,14 +39,14 @@ async def get_usage_history_endpoint(token: str = Depends(oauth2_scheme), db=Dep
 async def trigger_analysis(doc_id: str, token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     logger.info(f"[ANALYSIS-ROUTE] POST /analyze/{doc_id} - Queuing analysis")
     user = await get_current_user(token, db)
-    logger.info(f"[ANALYSIS-ROUTE] User: {user.get('email', user['_id'])}")
+    logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}")
     
     from bson import ObjectId
     doc = await db.documents.find_one({"_id": ObjectId(doc_id), "user_id": str(user["_id"])})
     if not doc:
         logger.warning(f"[ANALYSIS-ROUTE] Document not found: {doc_id}")
         raise HTTPException(404, "Document not found")
-    logger.info(f"[ANALYSIS-ROUTE] Document found: {doc.get('original_name')}, category: {doc.get('category')}")
+    logger.info(f"[ANALYSIS-ROUTE] Document found, category: {doc.get('category')}")
     
     existing = await db.analysis_results.find_one({"document_id": doc_id})
     if existing:
@@ -67,7 +67,7 @@ async def trigger_analysis(doc_id: str, token: str = Depends(oauth2_scheme), db=
 async def get_analysis_queue(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     logger.info(f"[ANALYSIS-ROUTE] GET /tasks - Fetching analysis queue status")
     user = await get_current_user(token, db)
-    logger.info(f"[ANALYSIS-ROUTE] User: {user.get('email', user['_id'])}")
+    logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}")
     
     tasks = await get_user_tasks(db, str(user["_id"]))
     logger.info(f"[ANALYSIS-ROUTE] Retrieved {len(tasks)} tasks")
@@ -96,7 +96,7 @@ async def delete_task(task_id: str, token: str = Depends(oauth2_scheme), db=Depe
     """Delete a task from the queue"""
     logger.info(f"[ANALYSIS-ROUTE] DELETE /tasks/{task_id} - Deleting task")
     user = await get_current_user(token, db)
-    logger.info(f"[ANALYSIS-ROUTE] User authenticated: {user.get('email', user['_id'])}")
+    logger.info(f"[ANALYSIS-ROUTE] User authenticated: {user['_id']}")
     
     task = await get_task_status(db, task_id)
     if not task:
@@ -140,7 +140,7 @@ async def process_queue(max_tasks: int = 5, token: str = Depends(oauth2_scheme),
 async def get_history(category: str = None, token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     logger.info(f"[ANALYSIS-ROUTE] GET /history - Fetching analysis history, category filter: {category}")
     user = await get_current_user(token, db)
-    logger.info(f"[ANALYSIS-ROUTE] User: {user.get('email', user['_id'])}")
+    logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}")
     analyses = await get_user_analyses(db, str(user["_id"]), category)
     logger.info(f"[ANALYSIS-ROUTE] Retrieved {len(analyses)} analyses")
     
@@ -170,7 +170,7 @@ async def get_history(category: str = None, token: str = Depends(oauth2_scheme),
 async def get_summary(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     logger.info(f"[ANALYSIS-ROUTE] GET /summary - Fetching health summary")
     user = await get_current_user(token, db)
-    logger.info(f"[ANALYSIS-ROUTE] User: {user.get('email', user['_id'])}")
+    logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}")
     analyses = await get_user_analyses(db, str(user["_id"]))
     logger.info(f"[ANALYSIS-ROUTE] Retrieved {len(analyses)} analyses for summary")
     
@@ -178,7 +178,7 @@ async def get_summary(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     health_score = calculate_health_score(analyses, user_conditions)
     logger.info(f"[ANALYSIS-ROUTE] Health score calculated: {health_score}")
     active_conditions = get_active_conditions(analyses)
-    logger.info(f"[ANALYSIS-ROUTE] Active conditions: {active_conditions}")
+    logger.info(f"[ANALYSIS-ROUTE] Active conditions: {len(active_conditions)} items")
     predictions = predict_conditions(analyses)
     logger.info(f"[ANALYSIS-ROUTE] Predictions generated: {len(predictions)} items")
     latest_metrics = get_latest_key_metrics(analyses)
@@ -205,14 +205,14 @@ async def get_summary(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
         "profile": profile_info,
         "latest_metrics": latest_metrics
     }
-    logger.info(f"[ANALYSIS-ROUTE] Summary returned: {result}")
+    logger.info(f"[ANALYSIS-ROUTE] Summary returned")
     return result
 
 @router.get("/doctor-questions")
 async def get_doctor_questions(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     logger.info(f"[ANALYSIS-ROUTE] GET /doctor-questions - Generating doctor questions")
     user = await get_current_user(token, db)
-    logger.info(f"[ANALYSIS-ROUTE] User: {user.get('email', user['_id'])}")
+    logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}")
     
     user_profile = {
         "age": user.get("age"),
@@ -232,7 +232,7 @@ async def get_doctor_questions(token: str = Depends(oauth2_scheme), db=Depends(g
 async def get_trends(category: str, token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     logger.info(f"[ANALYSIS-ROUTE] GET /trends/{category} - Fetching trends")
     user = await get_current_user(token, db)
-    logger.info(f"[ANALYSIS-ROUTE] User: {user.get('email', user['_id'])}")
+    logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}")
     analyses = await get_user_analyses(db, str(user["_id"]), category)
     logger.info(f"[ANALYSIS-ROUTE] Retrieved {len(analyses)} analyses for trends")
     
@@ -247,7 +247,7 @@ async def get_trends(category: str, token: str = Depends(oauth2_scheme), db=Depe
 async def get_analysis(doc_id: str, token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     logger.info(f"[ANALYSIS-ROUTE] GET /{doc_id} - Fetching analysis for display")
     user = await get_current_user(token, db)
-    logger.info(f"[ANALYSIS-ROUTE] User: {user.get('email', user['_id'])}")
+    logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}")
     try:
         doc_oid = ObjectId(doc_id)
     except Exception:
@@ -280,7 +280,7 @@ async def get_analysis(doc_id: str, token: str = Depends(oauth2_scheme), db=Depe
 async def chat(message: str = Body(..., embed=True), token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     logger.info(f"[ANALYSIS-ROUTE] POST /chat - Medical advisor chat")
     user = await get_current_user(token, db)
-    logger.info(f"[ANALYSIS-ROUTE] User: {user.get('email', user['_id'])}, message length: {len(message)}")
+    logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}, message length: {len(message)}")
     
     result = await chat_with_medical_advisor(db, str(user["_id"]), message)
     logger.info(f"[ANALYSIS-ROUTE] Chat response ready, sources: {len(result.get('sources', []))}")

@@ -1,5 +1,7 @@
 import logging
 import re
+from pathlib import Path
+from urllib.parse import quote
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from app.oauth2 import oauth2_scheme
 from app.models.document import DocumentUpload, ALLOWED_CATEGORIES
@@ -49,18 +51,16 @@ async def upload_document(
     token: str = Depends(oauth2_scheme),
     db=Depends(get_db)
 ):
-    logger.info(f"[UPLOAD] Starting document upload - filename: {file.filename}, category: {category}, document_date: {document_date}")
+    logger.info(f"[UPLOAD] Starting document upload - category: {category}")
     if category not in ALLOWED_CATEGORIES:
         logger.warning(f"[UPLOAD] Invalid category: {category}. Allowed: {ALLOWED_CATEGORIES}")
         raise HTTPException(400, "Invalid category")
     
     validate_file(file)
-    logger.info(f"[UPLOAD] Authenticating user...")
     user = await get_current_user(token, db)
-    logger.info(f"[UPLOAD] User authenticated: {user.get('email', user['_id'])} (ID: {user['_id']})")
+    logger.info(f"[UPLOAD] User authenticated: {user['_id']}")
     
     file_info = await save_file(file, str(user["_id"]), category)
-    logger.info(f"[UPLOAD] File saved successfully: {file_info}")
     
     file_path_str = str(file_info["file_path"])
     
@@ -95,6 +95,9 @@ async def upload_document(
             except Exception as e:
                 logger.warning(f"[UPLOAD] Failed to extract date from document: {e}")
     
+    if local_temp_path:
+        Path(local_temp_path).unlink(missing_ok=True)
+    
     if not parsed_date:
         parsed_date = datetime.utcnow()
         logger.info(f"[UPLOAD] Using upload date as fallback: {parsed_date}")
@@ -109,32 +112,14 @@ async def upload_document(
         **file_info
     }
     
-    # Generate predicted title
-    try:
-        from app.services.analysis import generate_document_title
-        predicted_title = await generate_document_title(extract_path, category)
-        if predicted_title:
-            doc_dict["predicted_title"] = predicted_title
-            logger.info(f"[UPLOAD] Generated predicted title: {predicted_title}")
-    except Exception as e:
-        logger.warning(f"[UPLOAD] Failed to generate title: {e}")
-    
     result = await db.documents.insert_one(doc_dict)
     document_id = str(result.inserted_id)
     logger.info(f"[UPLOAD] Document record created in MongoDB with ID: {document_id}")
     
-    # Queue analysis instead of running inline
+    # Title generation and analysis run in the background worker
     from app.services.task_queue import create_analysis_task
     task_id = await create_analysis_task(db, document_id, str(user["_id"]), category)
     logger.info(f"[UPLOAD] Analysis queued with task: {task_id}")
-    
-    # Process queue immediately
-    try:
-        from app.services.worker import process_all_pending
-        await process_all_pending(db, max_tasks=3)
-        logger.info(f"[UPLOAD] Processed pending tasks")
-    except Exception as e:
-        logger.error(f"[UPLOAD] Error processing queue: {e}")
     
     logger.info(f"[UPLOAD] Upload flow completed for document: {document_id}")
     return {"message": "Document uploaded", "document_id": document_id, "task_id": task_id}
@@ -156,7 +141,7 @@ async def bulk_upload_documents(
         raise HTTPException(400, "Maximum 20 files allowed at once")
     
     user = await get_current_user(token, db)
-    logger.info(f"[BULK-UPLOAD] User authenticated: {user.get('email', user['_id'])}")
+    logger.info(f"[BULK-UPLOAD] User authenticated: {user['_id']}")
     
     uploaded_docs = []
     errors = []
@@ -182,8 +167,10 @@ async def bulk_upload_documents(
                         extracted_date = extract_date_from_text(text)
                         if extracted_date:
                             parsed_date = extracted_date
-                except:
+                except Exception:
                     pass
+            if local_temp_path:
+                Path(local_temp_path).unlink(missing_ok=True)
             
             doc_dict = {
                 "user_id": str(user["_id"]),
@@ -207,21 +194,13 @@ async def bulk_upload_documents(
                 "name": file.filename,
                 "status": "uploaded"
             })
-            logger.info(f"[BULK-UPLOAD] Uploaded: {file.filename}")
+            logger.info(f"[BULK-UPLOAD] Uploaded document {document_id}")
             
         except Exception as e:
-            logger.error(f"[BULK-UPLOAD] Failed to upload {file.filename}: {e}")
+            logger.error(f"[BULK-UPLOAD] Failed to upload a file: {e}")
             errors.append({"name": file.filename, "error": str(e)})
     
     logger.info(f"[BULK-UPLOAD] Completed - {len(uploaded_docs)} uploaded, {len(errors)} failed")
-    
-    # Process queue after bulk upload
-    try:
-        from app.services.worker import process_all_pending
-        await process_all_pending(db, max_tasks=10)
-        logger.info(f"[BULK-UPLOAD] Processed pending tasks")
-    except Exception as e:
-        logger.error(f"[BULK-UPLOAD] Error processing queue: {e}")
     
     return {
         "message": f"Uploaded {len(uploaded_docs)} documents",
@@ -243,7 +222,7 @@ async def list_documents(
 ):
     logger.info(f"[DOCUMENTS] Listing documents - category: {category}, date_from: {date_from}, date_to: {date_to}, upload_from: {upload_from}, upload_to: {upload_to}")
     user = await get_current_user(token, db)
-    logger.info(f"[DOCUMENTS] User: {user.get('email', user['_id'])}")
+    logger.info(f"[DOCUMENTS] User: {user['_id']}")
     query = {"user_id": str(user["_id"])}
     if category:
         query["category"] = category
@@ -353,7 +332,7 @@ async def get_document_file(
         return StreamingResponse(
             file_stream,
             media_type=doc.get("mime_type", "application/octet-stream"),
-            headers={"Content-Disposition": f"inline; filename={doc.get('original_name', 'document')}"}
+            headers={"Content-Disposition": f"inline; filename*=UTF-8''{quote(doc.get('original_name') or 'document')}"}
         )
     else:
         from fastapi.responses import FileResponse
@@ -398,7 +377,7 @@ async def update_all_titles(token: str = Depends(oauth2_scheme), db=Depends(get_
                     {"$set": {"predicted_title": title}}
                 )
                 updated += 1
-                logger.info(f"[UPLOAD] Updated title for doc {doc['_id']}: {title}")
+                logger.info(f"[UPLOAD] Updated title for doc {doc['_id']}")
         except Exception as e:
             logger.error(f"[UPLOAD] Error updating doc {doc['_id']}: {e}")
     

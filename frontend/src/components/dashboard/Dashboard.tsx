@@ -67,8 +67,8 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
     setSidebarOpen(false);
   };
 
-  const logout = () => {
-    authService.logout();
+  const logout = async () => {
+    await authService.logout().catch(() => {});
     setUser(null);
     navigate("/login");
   };

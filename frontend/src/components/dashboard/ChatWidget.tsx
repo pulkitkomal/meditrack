@@ -43,8 +43,16 @@ const getConditionBasedSuggestions = (conditions: string[]): string[] => {
   return suggestions.length > 0 ? suggestions.slice(0, 4) : all;
 };
 
+const escapeHtml = (text: string): string =>
+  text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 const parseMarkdown = (text: string): string => {
-  let result = text;
+  let result = escapeHtml(text);
   result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   result = result.replace(/\*(.+?)\*/g, '<em>$1</em>');
   result = result.replace(/`(.+?)`/g, '<code class="bg-slate-100 px-1 rounded text-sm">$1</code>');
@@ -182,7 +190,7 @@ const ChatWidget = ({ isOpen, onToggle, userConditions = [] }: ChatWidgetProps) 
                   : "bg-slate-100 text-slate-700 rounded-bl-lg"
               }`}
             >
-              <p className="whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: msg.role === "bot" ? parseMarkdown(msg.content) : msg.content }}></p>
+              <p className="whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: msg.role === "bot" ? parseMarkdown(msg.content) : escapeHtml(msg.content) }}></p>
               {msg.sources && msg.sources.length > 0 && (
                 <div className="mt-3 pt-2 border-t border-slate-200/20">
                   <p className="text-xs text-slate-500 mb-2">Based on:</p>

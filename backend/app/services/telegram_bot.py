@@ -22,11 +22,20 @@ USE_OPENAI_VISION = os.getenv("USE_OPENAI_VISION", "true").lower() == "true"
 # Global application reference
 app: Optional[Any] = None
 scheduler = None
+_db = None
+
+def get_db():
+    """Return the bot's own MongoDB handle; the bot runs in its own container, not inside the API."""
+    global _db
+    if _db is None:
+        from motor.motor_asyncio import AsyncIOMotorClient
+        from app.config import settings
+        _db = AsyncIOMotorClient(settings.MONGO_URL)[settings.MONGO_DB_NAME]
+    return _db
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /start command"""
-    from app.main import app
-    db = app.mongo_db
+    db = get_db()
     
     # Check for start parameter (link token)
     if context.args:
@@ -115,8 +124,7 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     
     # Get user by chat_id
-    from app.main import app
-    db = app.mongo_db
+    db = get_db()
     
     user = await db.users.find_one({"telegram_chat_id": str(chat_id)})
     if not user:
@@ -162,8 +170,7 @@ async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /stop command - disable notifications"""
     chat_id = update.effective_chat.id
     
-    from app.main import app
-    db = app.mongo_db
+    db = get_db()
     
     await db.users.update_one(
         {"telegram_chat_id": str(chat_id)},
@@ -176,8 +183,7 @@ async def settings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /settings command"""
     chat_id = update.effective_chat.id
     
-    from app.main import app
-    db = app.mongo_db
+    db = get_db()
     
     user = await db.users.find_one({"telegram_chat_id": str(chat_id)})
     if not user:
@@ -262,8 +268,7 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         return  # Ignore commands
     
     # Get user
-    from app.main import app
-    db = app.mongo_db
+    db = get_db()
     
     user = await db.users.find_one({"telegram_chat_id": str(chat_id)})
     if not user:
@@ -309,8 +314,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle incoming photos"""
     chat_id = update.effective_chat.id
     
-    from app.main import app
-    db = app.mongo_db
+    db = get_db()
     
     user = await db.users.find_one({"telegram_chat_id": str(chat_id)})
     if not user:

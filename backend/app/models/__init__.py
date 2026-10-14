@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 
@@ -6,12 +6,11 @@ class UserBase(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
-    role: str = "patient"
     date_of_birth: Optional[str] = None
     phone: Optional[str] = None
 
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(min_length=8, max_length=72)
 
 class UserLogin(BaseModel):
     email: EmailStr

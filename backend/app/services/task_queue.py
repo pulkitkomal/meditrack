@@ -83,6 +83,14 @@ async def get_pending_tasks(db, limit: int = 10, user_id: str = None) -> list:
         })
     return tasks
 
+async def claim_task(db, task_id: str) -> bool:
+    """Atomically move a task from pending to processing; False if another worker got it first."""
+    result = await db.analysis_tasks.update_one(
+        {"_id": ObjectId(task_id), "status": "pending"},
+        {"$set": {"status": "processing", "started_at": datetime.utcnow()}}
+    )
+    return result.modified_count == 1
+
 async def update_task_status(db, task_id: str, status: str, error: str = None, result: dict = None) -> bool:
     """Update task status"""
     if status not in TASK_STATUSES:

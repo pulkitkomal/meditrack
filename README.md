@@ -111,6 +111,8 @@ TELEGRAM_WEBHOOK_SECRET=a-long-random-string
 
 # Comma-separated list of origins allowed to call the API from a browser
 CORS_ORIGINS=http://localhost:6363
+# Set to true when serving over HTTPS so the auth cookie is only sent over TLS
+COOKIE_SECURE=false
 
 # AWS S3 (optional)
 AWS_S3_BUCKET=your-bucket-name
@@ -129,6 +131,8 @@ cd meditrack
 # Start with Docker Compose
 docker-compose up -d
 ```
+
+This starts four services: `frontend`, `backend` (API), `worker` (document analysis and title generation), and `bot` (Telegram).
 
 Access the app:
 - **Frontend**: http://localhost:6363
@@ -203,8 +207,10 @@ Once connected, you can:
 
 ## Security
 
-- JWT-based authentication
-- Password hashing with bcrypt
+- JWT-based authentication stored in an httpOnly, SameSite=Strict cookie
+- Login rate limiting (5 failed attempts per account per 15 minutes)
+- Password hashing with bcrypt (minimum 8 characters)
+- Uploaded files are checked against their real file signature, not just the declared type
 - TLS/SSL encryption for data transmission
 - Encrypted storage on AWS S3
 - Secure API endpoints

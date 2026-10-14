@@ -1,46 +1,69 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
-from app.oauth2 import oauth2_scheme
-from app.models import UserCreate, UserLogin, Token
+from fastapi import APIRouter, Depends, HTTPException, Response
+from app.config import settings
+from app.oauth2 import oauth2_scheme, AUTH_COOKIE_NAME
+from app.models import UserCreate, UserLogin
 from app.services.auth import register_user, login_user
+from app.utils.rate_limit import FailedAttemptLimiter
 from app.utils.security import get_current_user
 
 logger = logging.getLogger("medical-records-app")
 
 router = APIRouter()
+
+login_limiter = FailedAttemptLimiter(max_attempts=5, window_seconds=15 * 60)
+
 def get_db():
     from app.main import app
     return app.mongo_db
 
 @router.post("/register", response_model=dict)
 async def register(user: UserCreate, db=Depends(get_db)):
-    logger.info(f"[AUTH] Registration attempt for email: {user.email}")
     result = await register_user(user, db)
     if not result:
-        logger.warning(f"[AUTH] Registration failed - email already registered: {user.email}")
+        logger.warning("[AUTH] Registration failed - email already registered")
         raise HTTPException(400, "Email already registered")
-    logger.info(f"[AUTH] User registered successfully - user_id: {result['id']}, email: {user.email}")
+    logger.info(f"[AUTH] User registered successfully - user_id: {result['id']}")
     return {"message": "User registered", "user_id": result["id"]}
 
 @router.post("/login", response_model=dict)
-async def login(user: UserLogin, db=Depends(get_db)):
-    logger.info(f"[AUTH] Login attempt for email: {user.email}")
+async def login(user: UserLogin, response: Response, db=Depends(get_db)):
+    limiter_key = user.email.lower()
+    if login_limiter.is_blocked(limiter_key):
+        logger.warning("[AUTH] Login blocked - too many failed attempts")
+        raise HTTPException(429, "Too many failed login attempts. Try again later.")
     result = await login_user(user, db)
     if not result:
-        logger.warning(f"[AUTH] Login failed - invalid credentials for email: {user.email}")
+        login_limiter.record_failure(limiter_key)
+        logger.warning("[AUTH] Login failed - invalid credentials")
         raise HTTPException(401, "Invalid credentials")
-    logger.info(f"[AUTH] Login successful for email: {user.email}")
-    return result
+    login_limiter.reset(limiter_key)
+    response.set_cookie(
+        AUTH_COOKIE_NAME,
+        result["access_token"],
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite="strict",
+        path="/api",
+    )
+    logger.info("[AUTH] Login successful")
+    return {"message": "Logged in"}
+
+@router.post("/logout", response_model=dict)
+async def logout(response: Response):
+    response.delete_cookie(
+        AUTH_COOKIE_NAME, path="/api", httponly=True, secure=settings.COOKIE_SECURE, samesite="strict"
+    )
+    return {"message": "Logged out"}
 
 @router.get("/me")
 async def get_me(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
-    logger.info(f"[AUTH] Fetching current user info")
     user = await get_current_user(token, db)
-    logger.info(f"[AUTH] Current user: {user.get('email')} (ID: {user['_id']})")
     return {
         "id": str(user["_id"]),
         "email": user["email"],
         "first_name": user["first_name"],
         "last_name": user["last_name"],
-        "role": user["role"]
+        "role": user.get("role", "patient")
     }

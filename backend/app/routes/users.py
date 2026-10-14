@@ -19,7 +19,7 @@ def get_db():
 async def get_user_profile(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     logger.info(f"[USER] Fetching user profile")
     user = await get_current_user(token, db)
-    logger.info(f"[USER] User profile fetched: {user.get('email')} (ID: {user['_id']})")
+    logger.info(f"[USER] User profile fetched: {user['_id']}")
     return {
         "id": str(user["_id"]),
         "email": user["email"],

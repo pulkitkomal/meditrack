@@ -47,9 +47,7 @@ const Summary = () => {
           analysisService.getDoctorQuestions(),
           analysisService.getUsageStats()
         ]);
-        console.log(`[FRONTEND-SUMMARY] Summary data:`, summaryRes.data);
         console.log(`[FRONTEND-SUMMARY] Questions count:`, questionsRes.data?.questions?.length || 0);
-        console.log(`[FRONTEND-SUMMARY] Token usage:`, usageRes.data);
         
         setSummary(summaryRes.data);
         setQuestions(questionsRes.data.questions);

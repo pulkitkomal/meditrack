@@ -12,12 +12,23 @@ logger = logging.getLogger("medical-records-app")
 ALLOWED_MIME_TYPES = ["application/pdf", "image/jpeg", "image/png"]
 MAX_FILE_SIZE = 10 * 1024 * 1024
 
+FILE_SIGNATURES = {
+    "application/pdf": (b"%PDF-", ".pdf"),
+    "image/jpeg": (b"\xff\xd8\xff", ".jpg"),
+    "image/png": (b"\x89PNG\r\n\x1a\n", ".png"),
+}
+
+def detect_file_type(content: bytes) -> tuple[str, str] | None:
+    """Return (mime_type, extension) based on the file's actual bytes, not the client's claim."""
+    for mime_type, (signature, extension) in FILE_SIGNATURES.items():
+        if content.startswith(signature):
+            return mime_type, extension
+    return None
+
 def validate_file(file: UploadFile):
-    logger.info(f"[STORAGE] Validating file: {file.filename}, content_type: {file.content_type}, size: unknown (validated after read)")
     if file.content_type not in ALLOWED_MIME_TYPES:
-        logger.warning(f"[STORAGE] File validation failed: {file.filename} has invalid content type: {file.content_type}")
+        logger.warning(f"[STORAGE] File validation failed: invalid content type: {file.content_type}")
         raise HTTPException(400, "Only PDF, JPG, PNG allowed")
-    logger.info(f"[STORAGE] File validation passed for: {file.filename}")
 
 def get_s3_client():
     if not settings.AWS_S3_BUCKET:
@@ -30,16 +41,21 @@ def get_s3_client():
     )
 
 async def save_file(file: UploadFile, user_id: str, category: str):
-    logger.info(f"[STORAGE] Saving file: {file.filename} for user: {user_id}, category: {category}")
+    logger.info(f"[STORAGE] Saving file for user: {user_id}, category: {category}")
     
-    content = await file.read()
+    content = await file.read(MAX_FILE_SIZE + 1)
     logger.info(f"[STORAGE] Read file content, size: {len(content)} bytes")
     
     if len(content) > MAX_FILE_SIZE:
-        logger.warning(f"[STORAGE] File size {len(content)} exceeds limit {MAX_FILE_SIZE}")
+        logger.warning(f"[STORAGE] File size exceeds limit {MAX_FILE_SIZE}")
         raise HTTPException(400, "File exceeds 10MB limit")
     
-    file_ext = Path(file.filename).suffix
+    detected = detect_file_type(content)
+    if not detected or detected[0] != file.content_type:
+        logger.warning(f"[STORAGE] File content does not match declared type {file.content_type}")
+        raise HTTPException(400, "Only PDF, JPG, PNG allowed")
+    mime_type, file_ext = detected
+    
     unique_name = f"{datetime.utcnow().timestamp()}{file_ext}"
     s3_key = f"{user_id}/{category}/{unique_name}"
     
@@ -50,7 +66,7 @@ async def save_file(file: UploadFile, user_id: str, category: str):
             BytesIO(content),
             settings.AWS_S3_BUCKET,
             s3_key,
-            ExtraArgs={"ContentType": file.content_type}
+            ExtraArgs={"ContentType": mime_type}
         )
         logger.info(f"[STORAGE] File uploaded to S3: {s3_key}")
         
@@ -59,7 +75,7 @@ async def save_file(file: UploadFile, user_id: str, category: str):
             "original_name": file.filename,
             "file_path": s3_key,
             "file_size": len(content),
-            "mime_type": file.content_type,
+            "mime_type": mime_type,
             "storage_type": "s3"
         }
     else:
@@ -76,11 +92,11 @@ async def save_file(file: UploadFile, user_id: str, category: str):
             "original_name": file.filename,
             "file_path": str(file_path),
             "file_size": len(content),
-            "mime_type": file.content_type,
+            "mime_type": mime_type,
             "storage_type": "local"
         }
     
-    logger.info(f"[STORAGE] Returning file info: {file_info}")
+    logger.info(f"[STORAGE] Saved file {unique_name} ({file_info['storage_type']})")
     return file_info
 
 async def get_file_path(document_id: str, user_id: str, db):
