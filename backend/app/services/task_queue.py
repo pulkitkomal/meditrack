@@ -1,6 +1,6 @@
 import logging
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 logger = logging.getLogger("medical-records-app")
@@ -87,9 +87,25 @@ async def claim_task(db, task_id: str) -> bool:
     """Atomically move a task from pending to processing; False if another worker got it first."""
     result = await db.analysis_tasks.update_one(
         {"_id": ObjectId(task_id), "status": "pending"},
-        {"$set": {"status": "processing", "started_at": datetime.utcnow()}}
+        {"$set": {"status": "processing", "started_at": datetime.utcnow()}, "$inc": {"attempts": 1}}
     )
     return result.modified_count == 1
+
+STALE_TASK_AFTER = timedelta(minutes=15)
+MAX_TASK_ATTEMPTS = 3
+
+async def requeue_stale_tasks(db) -> int:
+    """Return tasks abandoned mid-processing (e.g. by a crashed worker) to the queue, or fail them after repeated attempts."""
+    cutoff = datetime.utcnow() - STALE_TASK_AFTER
+    stale = {"status": "processing", "started_at": {"$lt": cutoff}}
+    failed = await db.analysis_tasks.update_many(
+        {**stale, "attempts": {"$gte": MAX_TASK_ATTEMPTS}},
+        {"$set": {"status": "failed", "completed_at": datetime.utcnow(), "error": "Processing timed out repeatedly"}}
+    )
+    requeued = await db.analysis_tasks.update_many(stale, {"$set": {"status": "pending", "started_at": None}})
+    if failed.modified_count or requeued.modified_count:
+        logger.warning(f"[TASK] Stale tasks: {requeued.modified_count} requeued, {failed.modified_count} failed")
+    return requeued.modified_count
 
 async def update_task_status(db, task_id: str, status: str, error: str = None, result: dict = None) -> bool:
     """Update task status"""

@@ -1,7 +1,7 @@
 import asyncio
 
 from bson import ObjectId
-from jose import jwt
+import jwt
 
 from app.config import settings
 from app.services import storage
@@ -118,7 +118,9 @@ def test_export_contains_records_but_no_secrets_or_embeddings(client, db):
 
 
 def register_and_login(client, email="carol@example.com", password="correct-horse"):
-    client.post("/api/auth/register", json={"email": email, "password": password, "first_name": "C", "last_name": "D"})
+    client.post("/api/auth/register", json={
+        "email": email, "password": password, "first_name": "C", "last_name": "D", "accept_privacy_policy": True,
+    })
     client.post("/api/auth/login", json={"email": email, "password": password})
     return client.cookies.get("access_token")
 

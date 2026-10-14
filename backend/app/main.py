@@ -1,11 +1,13 @@
 import logging
 import sys
+from logging.handlers import RotatingFileHandler
 import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from contextlib import asynccontextmanager
 from app.config import settings
+from app.db import ensure_indexes
 from app.routes import auth_router, documents_router, users_router, analysis_router, telegram_router
 
 # Configure comprehensive logging
@@ -14,7 +16,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler('/tmp/medical-records-app.log')
+        RotatingFileHandler('/tmp/medical-records-app.log', maxBytes=10 * 1024 * 1024, backupCount=3)
     ]
 )
 logger = logging.getLogger("medical-records-app")
@@ -26,7 +28,7 @@ logger.info("=" * 60)
 async def lifespan(app: FastAPI):
     app.mongo_client = AsyncIOMotorClient(settings.MONGO_URL)
     app.mongo_db = app.mongo_client[settings.MONGO_DB_NAME]
-    await app.mongo_db.revoked_tokens.create_index("expires_at", expireAfterSeconds=0)
+    await ensure_indexes(app.mongo_db)
     yield
     app.mongo_client.close()
 

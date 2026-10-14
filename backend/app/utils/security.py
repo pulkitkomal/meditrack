@@ -1,6 +1,6 @@
 import secrets
 import bcrypt
-from jose import JWTError, jwt
+import jwt
 from datetime import datetime, timedelta, timezone
 from app.config import settings
 from fastapi import HTTPException, status
@@ -26,7 +26,7 @@ def create_access_token(data: dict, token_version: int = 0) -> str:
 def decode_token(token: str) -> dict:
     try:
         return jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-    except JWTError:
+    except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 async def revoke_token(payload: dict, db) -> None:

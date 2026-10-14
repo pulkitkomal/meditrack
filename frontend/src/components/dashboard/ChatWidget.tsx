@@ -115,11 +115,13 @@ const ChatWidget = ({ isOpen, onToggle, userConditions = [] }: ChatWidgetProps) 
         sources: response.data.sources
       };
       setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
+    } catch (error: any) {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: "bot",
-        content: "Sorry, I encountered an error. Please try again."
+        content: typeof error.response?.data?.detail === "string"
+          ? error.response.data.detail
+          : "Sorry, I encountered an error. Please try again."
       }]);
     } finally {
       setLoading(false);
@@ -246,6 +248,7 @@ const ChatWidget = ({ isOpen, onToggle, userConditions = [] }: ChatWidgetProps) 
         <div className="flex gap-2">
           <input
             type="text"
+            maxLength={4000}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyPress}

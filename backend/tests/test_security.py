@@ -69,16 +69,8 @@ def test_process_queue_only_processes_callers_tasks(client, db, monkeypatch):
     assert processed_for == [str(alice["_id"])]
 
 
-def test_webhook_rejects_missing_secret(client):
-    assert client.post("/api/telegram/webhook", json={}).status_code == 403
-
-
-def test_webhook_rejects_wrong_secret(client):
-    response = client.post(
-        "/api/telegram/webhook", json={},
-        headers={"X-Telegram-Bot-Api-Secret-Token": "wrong"},
-    )
-    assert response.status_code == 403
+def test_webhook_endpoint_removed(client):
+    assert client.post("/api/telegram/webhook", json={}).status_code in (404, 405)
 
 
 def test_cors_allows_configured_origin_only(client):

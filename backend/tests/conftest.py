@@ -7,7 +7,6 @@ os.environ.update({
     "ACCESS_TOKEN_EXPIRE_MINUTES": "5",
     "UPLOAD_DIR": "/tmp/test-uploads",
     "CORS_ORIGINS": "http://localhost:6363",
-    "TELEGRAM_WEBHOOK_SECRET": "webhook-secret",
     # Override values from the real .env so tests never touch S3 or OpenAI
     "AWS_S3_BUCKET": "",
     "AWS_ACCESS_KEY_ID": "",

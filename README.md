@@ -62,7 +62,7 @@ The app features a premium, clean design inspired by Apple Health:
 - **Semantic Search for Chatbot**: AI-powered medical advisor now uses sentence-transformers embeddings with cross-encoder reranking for highly relevant context retrieval
 - **Improved PDF Processing**: Added poppler-utils (pdftoppm/pdftotext) as primary PDF engine with pymupdf fallback for better compatibility
 - **S3 Document Extraction**: Documents stored on S3 are now downloaded locally for text extraction and analysis
-- **Embeddings Backfill Script**: `update_embeddings.py` to generate embeddings for existing documents
+- **Embeddings Backfill Script**: `backend/scripts/update_embeddings.py` to generate embeddings for existing documents
 - **Clinical Reasoning Prompts**: Enhanced chatbot prompts with clinical reasoning, empathetic communication, and pathophysiological explanations
 - **PWA Support**: Install as a standalone app on mobile and desktop
 - **Original Document Viewer**: View original PDF/image files directly in the app
@@ -106,13 +106,13 @@ OPENAI_MODEL=gpt-4o-mini
 # Telegram Bot
 TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
 USE_OPENAI_VISION=true
-# Required when using TELEGRAM_WEBHOOK_URL; webhook calls without it are rejected
-TELEGRAM_WEBHOOK_SECRET=a-long-random-string
 
 # Comma-separated list of origins allowed to call the API from a browser
 CORS_ORIGINS=http://localhost:6363
 # Set to true when serving over HTTPS so the auth cookie is only sent over TLS
 COOKIE_SECURE=false
+# Per-user OpenAI token budget for the chat assistant over a rolling 24 hours
+DAILY_CHAT_TOKEN_LIMIT=100000
 
 # AWS S3 (optional)
 AWS_S3_BUCKET=your-bucket-name
@@ -151,6 +151,17 @@ uvicorn app.main:app --reload
 cd frontend
 npm install
 npm run dev
+```
+
+### Maintenance Scripts
+
+One-off scripts live in `backend/scripts/` and run inside the backend container:
+
+```bash
+# Remove chunks, analyses, tasks, and S3 files left behind by deleted documents (dry run unless --apply)
+docker exec medical-backend python -m scripts.cleanup_orphans
+# Generate chatbot embeddings for documents analyzed before semantic search existed
+docker exec medical-backend python -m scripts.update_embeddings
 ```
 
 ### Running Tests

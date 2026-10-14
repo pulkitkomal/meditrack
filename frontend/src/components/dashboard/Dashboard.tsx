@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { authService } from "../../services/api";
 import type { User } from "../../types";
-import OverviewTab from "./OverviewTab";
-import DocumentsTab from "./DocumentsTab";
-import InsightsTab from "./InsightsTab";
-import ChatPage from "./ChatPage";
-import ProfilePage from "./ProfilePage";
-import ReadingsTab from "./ReadingsTab";
+import PrivacyPolicyContent from "../legal/PrivacyPolicyContent";
+
+const OverviewTab = lazy(() => import("./OverviewTab"));
+const DocumentsTab = lazy(() => import("./DocumentsTab"));
+const InsightsTab = lazy(() => import("./InsightsTab"));
+const ChatPage = lazy(() => import("./ChatPage"));
+const ProfilePage = lazy(() => import("./ProfilePage"));
+const ReadingsTab = lazy(() => import("./ReadingsTab"));
 import BottomNav from "../ui/BottomNav";
 import ChatWidget from "./ChatWidget";
 
@@ -245,7 +247,9 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
         {/* Page Content */}
         <main className="flex-1 w-full overflow-auto pb-20 md:pb-8">
           <div className="animate-fade-in w-full px-3 md:px-6 py-4 md:py-6">
-            {renderTabContent()}
+            <Suspense fallback={<div className="skeleton h-40 rounded-xl" />}>
+              {renderTabContent()}
+            </Suspense>
           </div>
           
           {/* Footer */}
@@ -331,53 +335,7 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
                 <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-6 overflow-y-auto max-h-[60vh] text-sm text-slate-600 space-y-4">
-              <p className="text-slate-500 text-xs">Effective Date: May 8, 2026</p>
-              
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-2">1. Information We Collect</h3>
-                <p className="font-medium text-slate-700">Personal Information:</p>
-                <ul className="list-disc list-inside mt-1 mb-2">
-                  <li>Name and email address</li>
-                  <li>Profile information (age, gender, blood type)</li>
-                  <li>Medical conditions and allergies</li>
-                  <li>Health readings (glucose, blood pressure)</li>
-                </ul>
-                <p className="font-medium text-slate-700">Medical Documents:</p>
-                <ul className="list-disc list-inside mt-1">
-                  <li>Uploaded files (PDF, images)</li>
-                  <li>Document metadata</li>
-                  <li>AI analysis results</li>
-                </ul>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-2">2. How We Use Your Information</h3>
-                <p>We use collected information to:</p>
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Provide and maintain the Service</li>
-                  <li>Process and analyze uploaded medical documents</li>
-                  <li>Generate health insights and trends</li>
-                  <li>Send reminders (if Telegram is connected)</li>
-                </ul>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-2">3. Data Storage</h3>
-                <p>Your data is stored on MongoDB. Medical documents use AWS S3 with encryption. All medical data is encrypted at rest and in transit.</p>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-2">4. Your Rights</h3>
-                <p>You have the right to:</p>
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Access your personal data</li>
-                  <li>Request correction of inaccurate data</li>
-                  <li>Request deletion of your account and data</li>
-                  <li>Withdraw consent for Telegram integration</li>
-                </ul>
-              </div>
-            </div>
+            <PrivacyPolicyContent />
           </div>
         </div>
       )}

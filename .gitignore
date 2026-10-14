@@ -32,6 +32,3 @@ uploads_backup/
 # OS
 .DS_Store
 Thumbs.db
-
-# Docker
-*.dockerignore

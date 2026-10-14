@@ -5,6 +5,7 @@ chatbot chunks, analyses, and tasks whose document no longer exists, and S3 obje
 that no document references.
 
 Dry run by default; pass --apply to actually delete.
+Run from the backend directory: python -m scripts.cleanup_orphans [--apply]
 """
 import argparse
 import asyncio

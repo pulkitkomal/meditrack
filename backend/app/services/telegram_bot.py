@@ -485,54 +485,7 @@ def setup_bot():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
     
     app = application
-    
-    # Set up webhook asynchronously
-    import asyncio
-    from telegram import Bot
-    webhook_url = os.getenv("TELEGRAM_WEBHOOK_URL", "")
-    webhook_secret = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
-    if webhook_url and not webhook_secret:
-        logger.error("[TELEGRAM] TELEGRAM_WEBHOOK_URL is set but TELEGRAM_WEBHOOK_SECRET is not; webhook calls will be rejected")
-    if webhook_url:
-        asyncio.get_event_loop().run_until_complete(
-            application.bot.set_webhook(
-                f"{webhook_url}/api/telegram/webhook",
-                secret_token=webhook_secret or None,
-            )
-        )
-        logger.info(f"[TELEGRAM] Webhook set to {webhook_url}/api/telegram/webhook")
-    else:
-        logger.warning("[TELEGRAM] No WEBHOOK_URL set, bot will use long polling (may not work in container)")
-    
     return application
-
-async def process_link_token(token: str, chat_id: int, db) -> bool:
-    """Process a link token to connect a user"""
-    from datetime import datetime
-    
-    user = await db.users.find_one({"telegram_link_token": token})
-    
-    if not user:
-        return False
-    
-    # Check expiration
-    expires = user.get("telegram_link_expires")
-    if expires and expires < datetime.utcnow():
-        return False
-    
-    # Link the account
-    await db.users.update_one(
-        {"_id": user["_id"]},
-        {"$set": {
-            "telegram_chat_id": str(chat_id),
-            "telegram_enabled": True,
-            "telegram_link_token": None,
-            "telegram_link_expires": None
-        }}
-    )
-    
-    logger.info(f"[TELEGRAM] User {user['_id']} linked to chat {chat_id}")
-    return True
 
 async def start_bot():
     """Start the bot polling using manual polling"""
@@ -545,6 +498,8 @@ async def start_bot():
     logger.info("[TELEGRAM] Starting manual bot polling...")
     
     await app.initialize()
+    # Telegram refuses getUpdates while a webhook is registered
+    await app.bot.delete_webhook()
     
     from telegram.error import TelegramError
     bot = app.bot

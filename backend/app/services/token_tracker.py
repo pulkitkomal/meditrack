@@ -13,6 +13,17 @@ async def log_usage_to_db(db, user_id: str, usage_data: dict, category: str, mod
         "model": model
     })
 
+async def get_tokens_used_since(db, user_id: str, since: datetime, category: str = None) -> int:
+    """Total tokens a user has consumed since a point in time, optionally for one category."""
+    match = {"user_id": user_id, "timestamp": {"$gte": since}}
+    if category:
+        match["category"] = category
+    result = await db.token_usage.aggregate([
+        {"$match": match},
+        {"$group": {"_id": None, "total": {"$sum": "$total_tokens"}}},
+    ]).to_list(length=1)
+    return result[0]["total"] if result else 0
+
 async def get_user_usage(db, user_id: str) -> Dict:
     """Get total token usage for a user"""
     pipeline = [
