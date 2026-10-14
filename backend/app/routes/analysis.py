@@ -8,6 +8,7 @@ from app.services.analysis import get_user_analyses, get_analysis_for_document, 
 from app.services.comparison import compare_lab_values, calculate_health_score, get_active_conditions, predict_conditions, get_latest_key_metrics
 from app.services.token_tracker import get_user_usage, get_usage_history
 from app.services.task_queue import create_analysis_task, get_task_status, get_user_tasks
+from app.services.user_data import delete_document_data
 
 logger = logging.getLogger("medical-records-app")
 
@@ -301,14 +302,10 @@ async def delete_analysis(doc_id: str, token: str = Depends(oauth2_scheme), db=D
         logger.warning(f"[ANALYSIS-ROUTE] Unauthorized delete attempt")
         raise HTTPException(403, "Access denied")
     
-    file_path = doc.get("file_path")
-    if file_path and Path(file_path).exists():
-        Path(file_path).unlink()
-        logger.info(f"[ANALYSIS-ROUTE] Deleted file: {file_path}")
-    
-    await db.documents.delete_one({"_id": ObjectId(doc_id)})
-    await db.analysis_results.delete_one({"document_id": doc_id})
-    await db.analysis_tasks.delete_many({"document_id": doc_id})
-    logger.info(f"[ANALYSIS-ROUTE] Deleted document, analysis and tasks for: {doc_id}")
+    try:
+        await delete_document_data(db, doc)
+    except Exception as e:
+        logger.error(f"[ANALYSIS-ROUTE] Failed to delete document {doc_id}: {e}")
+        raise HTTPException(500, "Could not delete the stored file; the document was kept so you can retry")
     
     return {"message": "Deleted successfully"}

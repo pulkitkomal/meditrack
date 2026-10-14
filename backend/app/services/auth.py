@@ -17,5 +17,8 @@ async def login_user(login_data: UserLogin, db):
     user = await db.users.find_one({"email": login_data.email})
     if not user or not verify_password(login_data.password, user["password_hash"]):
         return None
-    token = create_access_token({"sub": user["email"], "role": user.get("role", "patient")})
+    token = create_access_token(
+        {"sub": user["email"], "role": user.get("role", "patient")},
+        token_version=user.get("token_version", 0),
+    )
     return {"access_token": token, "token_type": "bearer"}

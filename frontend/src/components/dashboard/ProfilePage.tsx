@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { authService, analysisService, telegramService } from "../../services/api";
 import type { User } from "../../types";
 import { Button } from "../ui/button";
+import AccountPrivacyCard from "./AccountPrivacyCard";
 
 interface ProfilePageProps {
   user: User;
@@ -438,6 +439,8 @@ const ProfilePage = ({ user, onBack, onUpdate }: ProfilePageProps) => {
           )}
         </div>
       </div>
+
+      <AccountPrivacyCard />
     </div>
   );
 };

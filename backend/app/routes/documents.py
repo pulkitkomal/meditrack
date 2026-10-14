@@ -294,18 +294,7 @@ async def get_document_file(
     """Get the actual document file (image or PDF)"""
     logger.info(f"[DOCUMENTS] Getting file for document: {doc_id}")
     
-    try:
-        from jose import jwt
-        from app.config import settings
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-        email = payload.get("sub")
-        user = await db.users.find_one({"email": email})
-    except Exception as e:
-        logger.warning(f"[DOCUMENTS] Token parse failed: {e}")
-        raise HTTPException(401, "Invalid token")
-    
-    if not user:
-        raise HTTPException(401, "User not found")
+    user = await get_current_user(token, db)
     
     try:
         doc_oid = ObjectId(doc_id)

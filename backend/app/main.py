@@ -26,6 +26,7 @@ logger.info("=" * 60)
 async def lifespan(app: FastAPI):
     app.mongo_client = AsyncIOMotorClient(settings.MONGO_URL)
     app.mongo_db = app.mongo_client[settings.MONGO_DB_NAME]
+    await app.mongo_db.revoked_tokens.create_index("expires_at", expireAfterSeconds=0)
     yield
     app.mongo_client.close()
 

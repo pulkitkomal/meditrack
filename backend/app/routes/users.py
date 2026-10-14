@@ -2,9 +2,13 @@ import logging
 import os
 import secrets
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Body
-from app.oauth2 import oauth2_scheme
-from app.utils.security import get_current_user
+from fastapi import APIRouter, Depends, HTTPException, Body, Response
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+from app.oauth2 import oauth2_scheme, AUTH_COOKIE_NAME
+from app.config import settings
+from app.services.user_data import delete_user_data, export_user_data
+from app.utils.security import get_current_user, verify_password
 from bson import ObjectId
 
 logger = logging.getLogger("medical-records-app")
@@ -43,6 +47,38 @@ async def get_user_profile(token: str = Depends(oauth2_scheme), db=Depends(get_d
         "notification_times": user.get("notification_times", []),
         "tracking_types": user.get("tracking_types", [])
     }
+
+@router.get("/me/export")
+async def export_my_data(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
+    """Download all of the current user's records as JSON."""
+    user = await get_current_user(token, db)
+    data = await export_user_data(db, user)
+    logger.info(f"[USER] Exported data for user {user['_id']}")
+    return JSONResponse(
+        jsonable_encoder(data, custom_encoder={ObjectId: str}),
+        headers={"Content-Disposition": 'attachment; filename="healthsync-export.json"'},
+    )
+
+@router.delete("/me")
+async def delete_my_account(
+    response: Response,
+    password: str = Body(..., embed=True),
+    token: str = Depends(oauth2_scheme),
+    db=Depends(get_db),
+):
+    """Permanently delete the account, all stored files, and every derived record."""
+    user = await get_current_user(token, db)
+    if not verify_password(password, user["password_hash"]):
+        raise HTTPException(403, "Incorrect password")
+    try:
+        await delete_user_data(db, user)
+    except Exception as e:
+        logger.error(f"[USER] Account deletion failed for user {user['_id']}: {e}")
+        raise HTTPException(500, "Could not delete all stored files; please retry")
+    response.delete_cookie(
+        AUTH_COOKIE_NAME, path="/api", httponly=True, secure=settings.COOKIE_SECURE, samesite="strict"
+    )
+    return {"message": "Account deleted"}
 
 @router.patch("/me")
 async def update_user_profile(
