@@ -97,7 +97,7 @@ MONGO_DB_NAME=medical_records
 
 # Authentication
 SECRET_KEY=your-super-secret-key
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
 # OpenAI
 OPENAI_API_KEY=sk-your-openai-key
@@ -136,7 +136,7 @@ This starts four services: `frontend`, `backend` (API), `worker` (document analy
 
 Access the app:
 - **Frontend**: http://localhost:6363
-- **Backend API**: http://localhost:8000
+- **Backend API**: http://localhost:8000 (bound to localhost only; browsers use the frontend's `/api` proxy)
 - **API Docs**: http://localhost:8000/docs
 
 ### Running Without Docker
@@ -177,8 +177,9 @@ Once connected, you can:
 
 ### Authentication
 - `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login
-- `POST /api/auth/logout` - Logout
+- `POST /api/auth/login` - Login (sets an httpOnly auth cookie)
+- `POST /api/auth/logout` - Logout and revoke the current token
+- `POST /api/auth/logout-all` - Revoke every token for the account
 
 ### Documents
 - `GET /api/documents/` - List documents
@@ -203,6 +204,8 @@ Once connected, you can:
 ### Users
 - `GET /api/users/me` - Get current user
 - `PATCH /api/users/me` - Update profile
+- `GET /api/users/me/export` - Download all of your records as JSON
+- `DELETE /api/users/me` - Permanently delete the account and all its data (requires password)
 - `POST /api/users/telegram/generate-link` - Generate Telegram link
 
 ## Security

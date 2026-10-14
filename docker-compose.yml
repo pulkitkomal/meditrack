@@ -3,7 +3,8 @@ services:
     build: ./backend
     container_name: medical-backend
     ports:
-      - "8000:8000"
+      # Localhost only; browsers reach the API through the frontend's nginx proxy
+      - "127.0.0.1:8000:8000"
     volumes:
       - uploads_data:/app/uploads
     env_file:

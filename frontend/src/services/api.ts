@@ -12,6 +12,9 @@ export const authService = {
   register: (data: any) => api.post("/auth/register", data),
   login: (data: any) => api.post("/auth/login", data),
   logout: () => api.post("/auth/logout"),
+  logoutAll: () => api.post("/auth/logout-all"),
+  exportData: () => api.get("/users/me/export", { responseType: "blob" }),
+  deleteAccount: (password: string) => api.delete("/users/me", { data: { password } }),
   getCurrentUser: () => api.get("/users/me"),
   updateProfile: (data: any) => api.patch("/users/me", data)
 };

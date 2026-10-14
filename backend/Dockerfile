@@ -8,7 +8,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app/ ./app/
-COPY worker.py bot.py ./
+COPY worker.py bot.py cleanup_orphans.py ./
 COPY update_embeddings.py ./
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

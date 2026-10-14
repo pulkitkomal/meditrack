@@ -107,6 +107,20 @@ async def get_file_path(document_id: str, user_id: str, db):
         return doc["file_path"]
     return None
 
+def delete_stored_file(doc: dict) -> None:
+    """Remove a document's file from S3 or local disk. Raises if S3 deletion fails."""
+    file_path = doc.get("file_path")
+    if not file_path:
+        return
+    if doc.get("storage_type") == "s3":
+        s3 = get_s3_client()
+        if not s3:
+            raise RuntimeError("S3 is not configured; cannot delete stored file")
+        s3.delete_object(Bucket=settings.AWS_S3_BUCKET, Key=file_path)
+    else:
+        Path(file_path).unlink(missing_ok=True)
+    logger.info(f"[STORAGE] Deleted stored file for document {doc.get('_id')}")
+
 async def get_file_stream(s3_key: str):
     """Get file stream from S3"""
     s3 = get_s3_client()
