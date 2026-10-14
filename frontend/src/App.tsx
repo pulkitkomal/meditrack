@@ -11,21 +11,13 @@ const AppContent = ({ user, setUser }: { user: User | null; setUser: (u: User | 
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
-  // Check for existing token on load
+  // Restore the session from the auth cookie on load
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      authService.getCurrentUser()
-        .then(res => {
-          setUser(res.data);
-        })
-        .catch(() => {
-          localStorage.removeItem("token");
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
+    localStorage.removeItem("token"); // tokens from before cookie auth
+    authService.getCurrentUser()
+      .then(res => setUser(res.data))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
   // Redirect if needed

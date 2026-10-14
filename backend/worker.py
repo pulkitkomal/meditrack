@@ -27,7 +27,7 @@ async def main():
     client = AsyncIOMotorClient(settings.MONGO_URL)
     db = client[settings.MONGO_DB_NAME]
     
-    logger.info(f"[WORKER] Connected to MongoDB: {settings.MONGO_URL}")
+    logger.info(f"[WORKER] Connected to MongoDB database: {settings.MONGO_DB_NAME}")
     
     # Test connection
     try:

@@ -1,38 +1,17 @@
 import axios from "axios";
 
-const api = axios.create({ baseURL: "/api" });
+// Auth uses an httpOnly cookie set by the backend; never put tokens or response bodies in the console.
+const api = axios.create({ baseURL: "/api", withCredentials: true });
 
-// Add request logging interceptor
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  
-  console.log(`[FRONTEND-API] Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`, {
-    data: config.data,
-    params: config.params,
-    headers: config.headers
-  });
-  return config;
-});
-
-// Add response logging interceptor
-api.interceptors.response.use((response) => {
-  console.log(`[FRONTEND-API] Response: ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`, {
-    data: response.data,
-    status: response.status
-  });
-  return response;
-}, (error) => {
-  console.error(`[FRONTEND-API] Error: ${error.response?.status || 'NETWORK_ERROR'} ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
-    error: error.response?.data || error.message
-  });
+api.interceptors.response.use((response) => response, (error) => {
+  console.error(`[FRONTEND-API] Error: ${error.response?.status || 'NETWORK_ERROR'} ${error.config?.method?.toUpperCase()} ${error.config?.url}`);
   return Promise.reject(error);
 });
 
 export const authService = {
   register: (data: any) => api.post("/auth/register", data),
   login: (data: any) => api.post("/auth/login", data),
-  logout: () => localStorage.removeItem("token"),
+  logout: () => api.post("/auth/logout"),
   getCurrentUser: () => api.get("/users/me"),
   updateProfile: (data: any) => api.patch("/users/me", data)
 };

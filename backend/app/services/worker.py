@@ -1,9 +1,10 @@
 import logging
 import asyncio
+from pathlib import Path
 from app.services.task_queue import (
-    create_analysis_task, get_pending_tasks, update_task_status, get_task_status, delete_user_tasks
+    create_analysis_task, get_pending_tasks, update_task_status, get_task_status, delete_user_tasks, claim_task
 )
-from app.services.analysis import analyze_document, save_analysis_result, generate_chunks_from_analysis, save_document_chunks
+from app.services.analysis import analyze_document, save_analysis_result, generate_chunks_from_analysis, save_document_chunks, generate_document_title
 from app.services.storage import get_file_path, download_s3_file
 
 logger = logging.getLogger("medical-records-app")
@@ -17,7 +18,10 @@ async def process_task(db, task: dict):
     
     logger.info(f"[WORKER] Processing task {task_id} for document {document_id}")
     
-    await update_task_status(db, task_id, "processing")
+    if not await claim_task(db, task_id):
+        logger.info(f"[WORKER] Task {task_id} already claimed by another worker, skipping")
+        return False
+    temp_path = None
     
     try:
         from bson import ObjectId
@@ -43,6 +47,15 @@ async def process_task(db, task: dict):
                 await update_task_status(db, task_id, "failed", error="Failed to download file from S3")
                 return False
             file_path = local_path
+            temp_path = local_path
+        
+        if not doc.get("predicted_title"):
+            try:
+                title = await generate_document_title(str(file_path), category)
+                if title:
+                    await db.documents.update_one({"_id": doc["_id"]}, {"$set": {"predicted_title": title}})
+            except Exception as e:
+                logger.warning(f"[WORKER] Failed to generate title for document {document_id}: {e}")
         
         analysis_data = await analyze_document(str(file_path), category, user_id, document_id, db)
         
@@ -69,6 +82,9 @@ async def process_task(db, task: dict):
         logger.error(f"[WORKER] Error processing task {task_id}: {e}", exc_info=True)
         await update_task_status(db, task_id, "failed", error=str(e))
         return False
+    finally:
+        if temp_path:
+            Path(temp_path).unlink(missing_ok=True)
 
 async def process_all_pending(db, max_tasks: int = 5, user_id: str = None):
     """Process pending tasks, optionally only those belonging to one user"""

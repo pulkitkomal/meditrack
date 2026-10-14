@@ -147,7 +147,7 @@ Generate a concise title:"""
         # Clean up the title - remove quotes if any
         title = title.strip('"').strip("'")
         
-        logger.info(f"[ANALYSIS] Generated title: {title}")
+        logger.info(f"[ANALYSIS] Generated title ({len(title)} characters)")
         return title
         
     except Exception as e:
@@ -429,7 +429,6 @@ async def analyze_with_openai(content: str, category: str, is_image: bool = Fals
         try:
             result = json.loads(response.choices[0].message.content)
             logger.info(f"[ANALYSIS] Parsed OpenAI response - keys: {list(result.keys())}")
-            logger.info(f"[ANALYSIS] Analysis result summary: {result.get('summary', 'N/A')[:100]}")
             return result
         except Exception as e:
             logger.error(f"[ANALYSIS] Failed to parse OpenAI response: {e}")
@@ -480,7 +479,6 @@ async def analyze_document(file_path, category: str, user_id: str, document_id: 
                 logger.warning(f"[ANALYSIS] No text extracted from PDF")
             analysis_data = await analyze_with_openai(text, category, is_image=False)
     
-    logger.info(f"[ANALYSIS] Analysis data received - summary: {analysis_data.get('summary', 'N/A')[:100]}")
     logger.info(f"[ANALYSIS] Extracted {len(analysis_data.get('lab_values', []))} lab values, {len(analysis_data.get('medications', []))} medications, {len(analysis_data.get('diagnoses', []))} diagnoses")
     
     normalized_lab_values = normalize_lab_display_names(analysis_data.get("lab_values", []))

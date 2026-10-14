@@ -92,11 +92,8 @@ const ChatPage = ({ userConditions = [] }: ChatPageProps) => {
     setInput("");
     setLoading(true);
 
-    console.log('[CHAT] Sending message:', userMessage.content);
-
     try {
       const response = await analysisService.chat(userMessage.content);
-      console.log('[CHAT] Received response:', response.data);
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "bot",

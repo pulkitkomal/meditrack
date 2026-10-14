@@ -33,5 +33,13 @@ services:
       - backend
     restart: unless-stopped
 
+  bot:
+    build: ./backend
+    container_name: medical-bot
+    command: python bot.py
+    env_file:
+      - .env
+    restart: unless-stopped
+
 volumes:
   uploads_data:

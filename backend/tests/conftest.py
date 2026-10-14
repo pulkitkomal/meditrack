@@ -8,6 +8,11 @@ os.environ.update({
     "UPLOAD_DIR": "/tmp/test-uploads",
     "CORS_ORIGINS": "http://localhost:6363",
     "TELEGRAM_WEBHOOK_SECRET": "webhook-secret",
+    # Override values from the real .env so tests never touch S3 or OpenAI
+    "AWS_S3_BUCKET": "",
+    "AWS_ACCESS_KEY_ID": "",
+    "AWS_SECRET_ACCESS_KEY": "",
+    "OPENAI_API_KEY": "",
 })
 
 import pytest
@@ -27,6 +32,7 @@ def db():
 
 @pytest.fixture
 def client(db):
+    auth.login_limiter._attempts.clear()
     for module in (analysis, auth, documents, telegram, users):
         app.dependency_overrides[module.get_db] = lambda: db
     # Not used as a context manager so the lifespan (real Mongo, Telegram bot) never starts.

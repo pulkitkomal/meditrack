@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     TELEGRAM_WEBHOOK_SECRET: str = ""
     USE_OPENAI_VISION: bool = True
     CORS_ORIGINS: str = "http://localhost:6363"
+    # Set to true when the app is served over HTTPS so the auth cookie is never sent over plain HTTP
+    COOKIE_SECURE: bool = False
 
     @property
     def cors_origins(self) -> list[str]:

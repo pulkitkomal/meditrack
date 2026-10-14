@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import { authService } from "../../services/api";
 import type { User } from "../../types";
 
+const MIN_PASSWORD_LENGTH = 8;
+
 interface RegisterFormProps {
   setUser: (user: User) => void;
 }
 
 const RegisterForm = ({ setUser }: RegisterFormProps) => {
-  const [form, setForm] = useState({ email: "", password: "", first_name: "", last_name: "", role: "patient" });
+  const [form, setForm] = useState({ email: "", password: "", first_name: "", last_name: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -18,8 +20,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
     
     try {
       await authService.register(form);
-      const loginRes = await authService.login({ email: form.email, password: form.password });
-      localStorage.setItem("token", loginRes.data.access_token);
+      await authService.login({ email: form.email, password: form.password });
       
       const userRes = await authService.getCurrentUser();
       setUser(userRes.data);
@@ -28,7 +29,8 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
         window.location.href = "/dashboard";
       }, 100);
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Registration failed. Please try again.");
+      const detail = err.response?.data?.detail;
+      setError(typeof detail === "string" ? detail : "Registration failed. Please check your details and try again.");
       setLoading(false);
     }
   };
@@ -90,27 +92,16 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
             />
           </div>
           
-          <div className="mb-4">
+          <div className="mb-6">
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
             <input 
-              placeholder="••••••••"
+              placeholder="At least 8 characters"
               type="password"
+              minLength={MIN_PASSWORD_LENGTH}
               value={form.password} 
               onChange={e => setForm({...form, password: e.target.value})}
               className={inputStyle}
             />
-          </div>
-          
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Account Type</label>
-            <select 
-              value={form.role} 
-              onChange={e => setForm({...form, role: e.target.value})}
-              className={inputStyle}
-            >
-              <option value="patient">Patient</option>
-              <option value="doctor">Doctor</option>
-            </select>
           </div>
           
           {error && (
@@ -122,7 +113,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
           <button
             type="button"
             onClick={doRegister}
-            disabled={loading || !form.email || !form.password || !form.first_name || !form.last_name}
+            disabled={loading || !form.email || form.password.length < MIN_PASSWORD_LENGTH || !form.first_name || !form.last_name}
             className="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-glass shadow-glass hover:shadow-glass-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Creating Account..." : "Create Account"}

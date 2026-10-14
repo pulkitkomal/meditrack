@@ -21,13 +21,12 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
     setLoading(true);
     setError("");
     try {
-      const res = await authService.login({ email, password });
-      localStorage.setItem("token", res.data.access_token);
+      await authService.login({ email, password });
       const userRes = await authService.getCurrentUser();
       setUser(userRes.data);
       navigate("/dashboard");
-    } catch {
-      setError("Invalid email or password");
+    } catch (err: any) {
+      setError(err.response?.status === 429 ? "Too many failed attempts. Please try again later." : "Invalid email or password");
     } finally {
       setLoading(false);
     }

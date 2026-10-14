@@ -141,7 +141,7 @@ def calculate_health_score(analyses: List[Dict[str, Any]], user_conditions: List
                         # Worsening trend
                         if current > prev_value * 1.1:  # 10% increase
                             trend_deduction += 5
-                            logger.info(f"[COMPARISON] Worsening trend for {test_name}: {prev_value} -> {current}")
+                            logger.info(f"[COMPARISON] Worsening trend detected")
         
         score -= trend_deduction
         logger.info(f"[COMPARISON] Trend deduction: {trend_deduction}")
@@ -175,7 +175,7 @@ def get_active_conditions(analyses: List[Dict[str, Any]]) -> List[str]:
         for d in diagnoses:
             if d.get("status") == "active":
                 conditions.add(d["condition"])
-    logger.info(f"[COMPARISON] Found {len(conditions)} active conditions: {list(conditions)}")
+    logger.info(f"[COMPARISON] Found {len(conditions)} active conditions")
     return list(conditions)
 
 def predict_conditions(analyses: List[Dict[str, Any]]) -> List[Dict]:
@@ -203,7 +203,7 @@ def predict_conditions(analyses: List[Dict[str, Any]]) -> List[Dict]:
                 "probability": 0.8,
                 "reasoning": f"HbA1c: {hba1c.get('value')}%, Glucose: {glucose.get('value')} mg/dL"
             })
-            logger.info(f"[COMPARISON] Diabetes prediction added - HbA1c: {hba1c.get('value')}, Glucose: {glucose.get('value')}")
+            logger.info(f"[COMPARISON] Diabetes prediction added")
     
     # Hypertension prediction
     vitals = latest.get("extracted_data", {}).get("vitals", {})
