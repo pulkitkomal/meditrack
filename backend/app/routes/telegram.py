@@ -1,5 +1,7 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+import secrets
+from fastapi import APIRouter, Depends, HTTPException, Header
+from app.config import settings
 from app.oauth2 import oauth2_scheme
 from app.utils.security import get_current_user
 from bson import ObjectId
@@ -200,11 +202,20 @@ async def get_readings_summary(token: str = Depends(oauth2_scheme), db=Depends(g
     }
 
 @router.post("/webhook")
-async def telegram_webhook(update: dict):
+async def telegram_webhook(
+    update: dict,
+    x_telegram_bot_api_secret_token: str = Header(None),
+):
     """Handle incoming Telegram updates"""
     from telegram import Update
-    from telegram.ext import Application
     from app.services.telegram_bot import app as bot_app, process_link_token
+    
+    expected_secret = settings.TELEGRAM_WEBHOOK_SECRET
+    if not expected_secret or not x_telegram_bot_api_secret_token or not secrets.compare_digest(
+        x_telegram_bot_api_secret_token, expected_secret
+    ):
+        logger.warning("[TELEGRAM] Rejected webhook call with missing or invalid secret token")
+        raise HTTPException(403, "Forbidden")
     
     if not bot_app:
         raise HTTPException(503, "Bot not initialized")
@@ -222,9 +233,7 @@ async def telegram_webhook(update: dict):
             success = await process_link_token(token, chat_id, db)
             
             if success:
-                from telegram import Bot
-                bot = Bot(token=update["message"]["chat"]["id"])
-                await bot.send_message(
+                await bot_app.bot.send_message(
                     chat_id=chat_id,
                     text="✅ Successfully connected to HealthSync! You can now log your health readings."
                 )

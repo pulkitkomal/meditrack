@@ -70,10 +70,10 @@ async def process_task(db, task: dict):
         await update_task_status(db, task_id, "failed", error=str(e))
         return False
 
-async def process_all_pending(db, max_tasks: int = 5):
-    """Process all pending tasks"""
+async def process_all_pending(db, max_tasks: int = 5, user_id: str = None):
+    """Process pending tasks, optionally only those belonging to one user"""
     logger.info(f"[WORKER] Fetching pending tasks (max: {max_tasks})")
-    tasks = await get_pending_tasks(db, limit=max_tasks)
+    tasks = await get_pending_tasks(db, limit=max_tasks, user_id=user_id)
     
     if not tasks:
         logger.info("[WORKER] No pending tasks found")

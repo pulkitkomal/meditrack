@@ -46,7 +46,7 @@ app = FastAPI(title="Medical Records API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -68,13 +68,3 @@ async def log_requests(request, call_next):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
-
-@app.get("/logs")
-async def get_logs(lines: int = 50):
-    """Return the last N lines of the log file for debugging"""
-    try:
-        with open('/tmp/medical-records-app.log', 'r') as f:
-            log_lines = f.readlines()
-            return {"logs": log_lines[-lines:]}
-    except Exception as e:
-        return {"error": str(e), "message": "Could not read log file"}

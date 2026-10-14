@@ -486,9 +486,15 @@ def setup_bot():
     import asyncio
     from telegram import Bot
     webhook_url = os.getenv("TELEGRAM_WEBHOOK_URL", "")
+    webhook_secret = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
+    if webhook_url and not webhook_secret:
+        logger.error("[TELEGRAM] TELEGRAM_WEBHOOK_URL is set but TELEGRAM_WEBHOOK_SECRET is not; webhook calls will be rejected")
     if webhook_url:
         asyncio.get_event_loop().run_until_complete(
-            application.bot.set_webhook(f"{webhook_url}/api/telegram/webhook")
+            application.bot.set_webhook(
+                f"{webhook_url}/api/telegram/webhook",
+                secret_token=webhook_secret or None,
+            )
         )
         logger.info(f"[TELEGRAM] Webhook set to {webhook_url}/api/telegram/webhook")
     else:

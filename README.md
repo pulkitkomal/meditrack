@@ -106,6 +106,11 @@ OPENAI_MODEL=gpt-4o-mini
 # Telegram Bot
 TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
 USE_OPENAI_VISION=true
+# Required when using TELEGRAM_WEBHOOK_URL; webhook calls without it are rejected
+TELEGRAM_WEBHOOK_SECRET=a-long-random-string
+
+# Comma-separated list of origins allowed to call the API from a browser
+CORS_ORIGINS=http://localhost:6363
 
 # AWS S3 (optional)
 AWS_S3_BUCKET=your-bucket-name
@@ -142,6 +147,14 @@ uvicorn app.main:app --reload
 cd frontend
 npm install
 npm run dev
+```
+
+### Running Tests
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+python -m pytest tests
 ```
 
 ## Connecting Telegram

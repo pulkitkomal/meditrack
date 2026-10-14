@@ -115,18 +115,20 @@ async def delete_task(task_id: str, token: str = Depends(oauth2_scheme), db=Depe
     
     return {"message": "Task deleted"}
 
+MAX_TASKS_PER_REQUEST = 5
+
 @router.post("/process-queue")
-async def process_queue(max_tasks: int = 5):
-    """Process pending analysis tasks"""
-    from app.main import app
+async def process_queue(max_tasks: int = 5, token: str = Depends(oauth2_scheme), db=Depends(get_db)):
+    """Process the current user's pending analysis tasks"""
     from app.services.worker import process_all_pending
     
-    logger.info(f"[ANALYSIS-ROUTE] POST /process-queue - Processing pending tasks")
+    user = await get_current_user(token, db)
+    max_tasks = max(1, min(max_tasks, MAX_TASKS_PER_REQUEST))
+    logger.info(f"[ANALYSIS-ROUTE] POST /process-queue - Processing pending tasks for user {user['_id']}")
     
     try:
-        db = app.mongo_db
         if db is not None:
-            processed = await process_all_pending(db, max_tasks=max_tasks)
+            processed = await process_all_pending(db, max_tasks=max_tasks, user_id=str(user["_id"]))
             logger.info(f"[ANALYSIS-ROUTE] Processed {processed} tasks")
             return {"message": f"Processed {processed} tasks"}
     except Exception as e:
@@ -246,23 +248,29 @@ async def get_analysis(doc_id: str, token: str = Depends(oauth2_scheme), db=Depe
     logger.info(f"[ANALYSIS-ROUTE] GET /{doc_id} - Fetching analysis for display")
     user = await get_current_user(token, db)
     logger.info(f"[ANALYSIS-ROUTE] User: {user.get('email', user['_id'])}")
+    try:
+        doc_oid = ObjectId(doc_id)
+    except Exception:
+        raise HTTPException(404, "Analysis not found")
+    doc = await db.documents.find_one({"_id": doc_oid, "user_id": str(user["_id"])})
+    if not doc:
+        logger.warning(f"[ANALYSIS-ROUTE] Document not found or not owned by user: {doc_id}")
+        raise HTTPException(404, "Analysis not found")
+
     analysis = await get_analysis_for_document(db, doc_id)
     if not analysis:
         logger.warning(f"[ANALYSIS-ROUTE] Analysis not found for document: {doc_id}")
         raise HTTPException(404, "Analysis not found")
     analysis["_id"] = str(analysis["_id"])
     
-    # Get document info to include file_path and document_date
-    doc = await db.documents.find_one({"_id": ObjectId(doc_id)})
-    if doc:
-        if doc.get("file_path"):
-            analysis["file_path"] = str(doc["file_path"])
-            analysis["mime_type"] = doc.get("mime_type", "")
-            analysis["storage_type"] = doc.get("storage_type", "local")
-        if doc.get("document_date"):
-            analysis["document_date"] = doc["document_date"]
-        else:
-            analysis["document_date"] = analysis.get("analysis_date")
+    if doc.get("file_path"):
+        analysis["file_path"] = str(doc["file_path"])
+        analysis["mime_type"] = doc.get("mime_type", "")
+        analysis["storage_type"] = doc.get("storage_type", "local")
+    if doc.get("document_date"):
+        analysis["document_date"] = doc["document_date"]
+    else:
+        analysis["document_date"] = analysis.get("analysis_date")
     
     logger.info(f"[ANALYSIS-ROUTE] Analysis found - category: {analysis.get('category')}, date: {analysis.get('document_date')}")
     logger.info(f"[ANALYSIS-ROUTE] Returning analysis with keys: {list(analysis.keys())}")

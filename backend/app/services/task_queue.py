@@ -67,9 +67,12 @@ async def get_user_tasks(db, user_id: str, status: str = None) -> list:
         })
     return tasks
 
-async def get_pending_tasks(db, limit: int = 10) -> list:
+async def get_pending_tasks(db, limit: int = 10, user_id: str = None) -> list:
     """Get pending tasks for processing"""
-    cursor = db.analysis_tasks.find({"status": "pending"}).sort("created_at", 1).limit(limit)
+    query = {"status": "pending"}
+    if user_id:
+        query["user_id"] = user_id
+    cursor = db.analysis_tasks.find(query).sort("created_at", 1).limit(limit)
     tasks = []
     async for task in cursor:
         tasks.append({
