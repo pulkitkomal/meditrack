@@ -11,6 +11,8 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger("medical-records-app-bot")
+# httpx logs full request URLs at INFO, and Telegram API URLs contain the bot token
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 from app.services.telegram_bot import setup_bot, start_bot
 
