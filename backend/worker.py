@@ -16,6 +16,7 @@ logger = logging.getLogger("medical-records-app-worker")
 
 # Import after logging setup
 from app.services.worker import process_all_pending
+from app.services.task_queue import requeue_stale_tasks
 from app.config import settings
 
 
@@ -41,7 +42,7 @@ async def main():
     
     while True:
         try:
-            # Process pending tasks
+            await requeue_stale_tasks(db)
             processed = await process_all_pending(db, max_tasks=5)
             
             if processed > 0:

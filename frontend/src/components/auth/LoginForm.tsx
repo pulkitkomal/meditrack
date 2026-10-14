@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authService } from "../../services/api";
 import type { User } from "../../types";
+import PrivacyPolicyContent from "../legal/PrivacyPolicyContent";
 
 interface LoginFormProps {
   setUser: (user: User) => void;
@@ -77,25 +78,7 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
                 <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-6 overflow-y-auto max-h-[60vh] text-sm text-slate-600 space-y-4">
-              <p className="text-slate-500 text-xs">Effective Date: May 8, 2026</p>
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-2">1. Information We Collect</h3>
-                <p>We collect name, email, profile information, health readings, and medical documents.</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-2">2. How We Use Your Information</h3>
-                <p>We use collected information to provide and maintain the Service, process documents, and generate health insights.</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-2">3. Data Storage</h3>
-                <p>Your data is stored on MongoDB with encryption. Medical documents use AWS S3 with encryption.</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-2">4. Your Rights</h3>
-                <p>You have the right to access, correct, delete your data, and withdraw consent.</p>
-              </div>
-            </div>
+            <PrivacyPolicyContent />
           </div>
         </div>
       )}

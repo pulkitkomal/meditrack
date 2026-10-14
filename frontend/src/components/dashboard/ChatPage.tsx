@@ -106,7 +106,9 @@ const ChatPage = ({ userConditions = [] }: ChatPageProps) => {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: "bot",
-        content: error.response?.data?.detail || error.response?.data?.error?.message || "Sorry, I encountered an error. Please try again."
+        content: typeof error.response?.data?.detail === "string"
+          ? error.response.data.detail
+          : "Sorry, I encountered an error. Please try again."
       }]);
     } finally {
       setLoading(false);
@@ -222,6 +224,7 @@ const ChatPage = ({ userConditions = [] }: ChatPageProps) => {
         <div className="flex gap-3">
           <input
             type="text"
+            maxLength={4000}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyPress}

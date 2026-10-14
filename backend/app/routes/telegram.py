@@ -1,7 +1,5 @@
 import logging
-import secrets
-from fastapi import APIRouter, Depends, HTTPException, Header
-from app.config import settings
+from fastapi import APIRouter, Depends
 from app.oauth2 import oauth2_scheme
 from app.utils.security import get_current_user
 from bson import ObjectId
@@ -200,46 +198,3 @@ async def get_readings_summary(token: str = Depends(oauth2_scheme), db=Depends(g
             "count": weight_data["count"] if weight_data else 0
         }
     }
-
-@router.post("/webhook")
-async def telegram_webhook(
-    update: dict,
-    x_telegram_bot_api_secret_token: str = Header(None),
-):
-    """Handle incoming Telegram updates"""
-    from telegram import Update
-    from app.services.telegram_bot import app as bot_app, process_link_token
-    
-    expected_secret = settings.TELEGRAM_WEBHOOK_SECRET
-    if not expected_secret or not x_telegram_bot_api_secret_token or not secrets.compare_digest(
-        x_telegram_bot_api_secret_token, expected_secret
-    ):
-        logger.warning("[TELEGRAM] Rejected webhook call with missing or invalid secret token")
-        raise HTTPException(403, "Forbidden")
-    
-    if not bot_app:
-        raise HTTPException(503, "Bot not initialized")
-    
-    # Check if this is a /start command with token
-    if "message" in update and "text" in update["message"]:
-        text = update["message"]["text"]
-        if text.startswith("/start "):
-            token = text.split(" ", 1)[1]
-            chat_id = update["message"]["chat"]["id"]
-            
-            from app.main import app
-            db = app.mongo_db
-            
-            success = await process_link_token(token, chat_id, db)
-            
-            if success:
-                await bot_app.bot.send_message(
-                    chat_id=chat_id,
-                    text="✅ Successfully connected to HealthSync! You can now log your health readings."
-                )
-    
-    # Process the update
-    telegram_update = Update.de_json(update, bot_app.bot)
-    await bot_app.process_update(telegram_update)
-    
-    return {"ok": True}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { authService } from "../../services/api";
 import type { User } from "../../types";
+import PrivacyPolicyContent from "../legal/PrivacyPolicyContent";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -11,6 +12,8 @@ interface RegisterFormProps {
 
 const RegisterForm = ({ setUser }: RegisterFormProps) => {
   const [form, setForm] = useState({ email: "", password: "", first_name: "", last_name: "" });
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +22,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
     setError("");
     
     try {
-      await authService.register(form);
+      await authService.register({ ...form, accept_privacy_policy: acceptedPrivacy });
       await authService.login({ email: form.email, password: form.password });
       
       const userRes = await authService.getCurrentUser();
@@ -39,6 +42,19 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-8 bg-[#f2f2f7]">
+      {showPrivacy && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="glass-surface-xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-glass-elevated">
+            <div className="flex items-center justify-between p-5 border-b border-glass-border-subtle">
+              <h2 className="text-xl font-bold text-slate-800">Privacy Policy</h2>
+              <button type="button" onClick={() => setShowPrivacy(false)} className="p-2 hover:bg-glass-tint rounded-glass-sm">
+                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <PrivacyPolicyContent />
+          </div>
+        </div>
+      )}
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -92,7 +108,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
             />
           </div>
           
-          <div className="mb-6">
+          <div className="mb-4">
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
             <input 
               placeholder="At least 8 characters"
@@ -104,6 +120,22 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
             />
           </div>
           
+          <label className="flex items-start gap-2 mb-6 text-sm text-slate-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedPrivacy}
+              onChange={e => setAcceptedPrivacy(e.target.checked)}
+              className="mt-0.5 w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
+            />
+            <span>
+              I agree to the{" "}
+              <button type="button" onClick={() => setShowPrivacy(true)} className="text-teal-600 hover:underline">
+                Privacy Policy
+              </button>
+              , including that my uploaded documents and assistant messages are processed by OpenAI to generate analyses.
+            </span>
+          </label>
+
           {error && (
             <div className="bg-red-50/80 text-red-600 p-3 rounded-glass text-sm text-center mb-4">
               {error}
@@ -113,7 +145,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
           <button
             type="button"
             onClick={doRegister}
-            disabled={loading || !form.email || form.password.length < MIN_PASSWORD_LENGTH || !form.first_name || !form.last_name}
+            disabled={loading || !acceptedPrivacy || !form.email || form.password.length < MIN_PASSWORD_LENGTH || !form.first_name || !form.last_name}
             className="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-glass shadow-glass hover:shadow-glass-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Creating Account..." : "Create Account"}

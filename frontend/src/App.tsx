@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import Login from "./components/auth/LoginForm";
 import Register from "./components/auth/RegisterForm";
-import Dashboard from "./components/dashboard/Dashboard";
-import AnalysisPage from "./components/dashboard/AnalysisPage";
+
+const Dashboard = lazy(() => import("./components/dashboard/Dashboard"));
+const AnalysisPage = lazy(() => import("./components/dashboard/AnalysisPage"));
 import type { User } from "./types";
 import { authService } from "./services/api";
 
@@ -33,15 +34,18 @@ const AppContent = ({ user, setUser }: { user: User | null; setUser: (u: User | 
     }
   }, [user, loading, navigate]);
 
+  const loadingScreen = (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      Loading...
+    </div>
+  );
+
   if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        Loading...
-      </div>
-    );
+    return loadingScreen;
   }
 
   return (
+    <Suspense fallback={loadingScreen}>
     <Routes>
       <Route path="/login" element={!user ? <Login setUser={setUser} /> : <Navigate to="/dashboard" />} />
       <Route path="/register" element={!user ? <Register setUser={setUser} /> : <Navigate to="/dashboard" />} />
@@ -49,6 +53,7 @@ const AppContent = ({ user, setUser }: { user: User | null; setUser: (u: User | 
       <Route path="/analysis/:docId" element={user ? <AnalysisPage /> : <Navigate to="/login" />} />
       <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
     </Routes>
+    </Suspense>
   );
 };
 

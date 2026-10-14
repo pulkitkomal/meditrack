@@ -17,7 +17,9 @@ interface UsageStats {
   request_count: number;
 }
 
-const InputField = ({ label, name, value, onChange, type = "text", placeholder, options }: any) => (
+const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+const InputField = ({ label, name, value, onChange, type = "text", placeholder, options, optionValues }: any) => (
   <div>
     <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>
     {options ? (
@@ -28,8 +30,8 @@ const InputField = ({ label, name, value, onChange, type = "text", placeholder, 
         className="input-premium"
       >
         <option value="">{options[0]}</option>
-        {options.slice(1).map((opt: string) => (
-          <option key={opt} value={opt.toLowerCase().replace(/[^a-z]/g, "_")}>{opt}</option>
+        {options.slice(1).map((opt: string, i: number) => (
+          <option key={opt} value={optionValues ? optionValues[i] : opt.toLowerCase().replace(/[^a-z]/g, "_")}>{opt}</option>
         ))}
       </select>
     ) : (
@@ -57,7 +59,7 @@ const ProfilePage = ({ user, onBack, onUpdate }: ProfilePageProps) => {
     gender: user.gender || "",
     age: user.age?.toString() || "",
     date_of_birth: user.date_of_birth || "",
-    blood_type: user.blood_type || "",
+    blood_type: BLOOD_TYPES.includes(user.blood_type || "") ? user.blood_type! : "",
     height: user.height?.toString() || "",
     weight: user.weight?.toString() || "",
     emergency_contact: user.emergency_contact || "",
@@ -186,8 +188,11 @@ const ProfilePage = ({ user, onBack, onUpdate }: ProfilePageProps) => {
       const res = await authService.updateProfile(updateData);
       onUpdate(res.data);
       setMessage("Profile updated successfully!");
-    } catch (error) {
-      setMessage("Failed to update profile.");
+    } catch (error: any) {
+      const invalidField = error.response?.data?.detail?.[0]?.loc?.slice(-1)[0];
+      setMessage(invalidField
+        ? `Failed to update profile: please check "${String(invalidField).replace(/_/g, " ")}".`
+        : "Failed to update profile.");
     } finally {
       setSaving(false);
     }
@@ -257,7 +262,8 @@ const ProfilePage = ({ user, onBack, onUpdate }: ProfilePageProps) => {
               name="blood_type" 
               value={formData.blood_type} 
               onChange={(e: any) => setFormData({ ...formData, blood_type: e.target.value })}
-              options={["Select blood type", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]}
+              options={["Select blood type", ...BLOOD_TYPES]}
+              optionValues={BLOOD_TYPES}
             />
             <InputField 
               label="Height (cm)" 

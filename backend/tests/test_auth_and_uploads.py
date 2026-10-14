@@ -4,7 +4,10 @@ from app.services import analysis as analysis_service
 from app.services.task_queue import claim_task, create_analysis_task
 from tests.conftest import auth_header, make_user
 
-NEW_USER = {"email": "carol@example.com", "password": "correct-horse", "first_name": "C", "last_name": "D"}
+NEW_USER = {
+    "email": "carol@example.com", "password": "correct-horse", "first_name": "C", "last_name": "D",
+    "accept_privacy_policy": True,
+}
 
 
 def run(coro):

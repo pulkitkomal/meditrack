@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from app.oauth2 import oauth2_scheme
 from app.models.document import DocumentUpload, ALLOWED_CATEGORIES
 from app.services.storage import save_file, validate_file, download_s3_file
-from app.services.analysis import extract_text_from_pdf
+from app.services.pdf_processing import extract_text_from_pdf
 from app.utils.security import get_current_user
 from bson import ObjectId
 from datetime import datetime
