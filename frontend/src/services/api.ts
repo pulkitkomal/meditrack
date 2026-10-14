@@ -14,6 +14,7 @@ export const authService = {
   logout: () => api.post("/auth/logout"),
   logoutAll: () => api.post("/auth/logout-all"),
   exportData: () => api.get("/users/me/export", { responseType: "blob" }),
+  downloadReport: () => api.get("/users/me/report", { responseType: "blob" }),
   deleteAccount: (password: string) => api.delete("/users/me", { data: { password } }),
   getCurrentUser: () => api.get("/users/me"),
   updateProfile: (data: any) => api.patch("/users/me", data)
@@ -45,14 +46,40 @@ export const analysisService = {
   getTask: (taskId: string) => api.get(`/analysis/tasks/${taskId}`),
   deleteTask: (taskId: string) => api.delete(`/analysis/tasks/${taskId}`),
   processQueue: (maxTasks?: number) => api.post("/analysis/process-queue", { max_tasks: maxTasks }),
-  chat: (message: string) => api.post("/analysis/chat", { message })
+  chat: (message: string) => api.post("/analysis/chat", { message }),
+  correctLabValue: (docId: string, index: number, data: LabValueUpdate) => api.put(`/analysis/${docId}/lab-values/${index}`, data)
+};
+
+export type ReadingType = "glucose" | "bp" | "weight";
+
+export interface ReadingInput {
+  type: ReadingType;
+  value?: number;
+  unit?: "mg/dL" | "mmol/L" | "kg";
+  systolic?: number;
+  diastolic?: number;
+  timestamp?: string;
+}
+
+export interface LabValueUpdate {
+  test?: string;
+  value: number | string;
+  unit?: string;
+  reference_range?: string;
+  status: "normal" | "high" | "low" | "critical";
+}
+
+export const readingsService = {
+  list: (type?: ReadingType) => api.get("/readings/", { params: type ? { type } : {} }),
+  summary: () => api.get("/readings/summary"),
+  create: (data: ReadingInput) => api.post("/readings/", data),
+  update: (id: string, data: ReadingInput) => api.put(`/readings/${id}`, data),
+  remove: (id: string) => api.delete(`/readings/${id}`)
 };
 
 export const telegramService = {
   getConfig: () => api.get("/telegram/config"),
   updateConfig: (data: any) => api.put("/telegram/config", data),
   disconnect: () => api.post("/telegram/disconnect"),
-  getReadings: (type?: string) => api.get("/telegram/readings", { params: type ? { type } : {} }),
-  getSummary: () => api.get("/telegram/readings/summary"),
   generateLink: () => api.post("/users/telegram/generate-link")
 };

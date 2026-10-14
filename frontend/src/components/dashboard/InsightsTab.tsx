@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { analysisService, telegramService } from "../../services/api";
+import { analysisService, readingsService } from "../../services/api";
 import { PredictionsList } from "./PredictionsList";
 import { DoctorQuestions } from "./DoctorQuestions";
 
@@ -222,7 +222,7 @@ const InsightsTab = ({ userConditions = [] }: InsightsTabProps) => {
       }
 
       try {
-        const vitalsRes = await telegramService.getReadings();
+        const vitalsRes = await readingsService.list();
         setVitals(vitalsRes.data || []);
       } catch (e) {
         console.log("Vitals not available (Telegram not connected)");

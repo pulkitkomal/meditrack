@@ -1,7 +1,8 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Body
 from bson import ObjectId
 from pathlib import Path
+from app.models import LabValueUpdate
 from app.oauth2 import oauth2_scheme
 from app.utils.security import get_current_user
 from app.services.analysis import get_user_analyses, get_analysis_for_document, analyze_document, save_analysis_result
@@ -14,6 +15,7 @@ from datetime import datetime, timedelta
 CHAT_MAX_MESSAGE_CHARS = 4000
 from app.services.task_queue import create_analysis_task, get_task_status, get_user_tasks
 from app.services.user_data import delete_document_data
+from app.services.corrections import apply_lab_correction, rebuild_document_chunks
 
 logger = logging.getLogger("medical-records-app")
 
@@ -281,6 +283,26 @@ async def get_analysis(doc_id: str, token: str = Depends(oauth2_scheme), db=Depe
     logger.info(f"[ANALYSIS-ROUTE] Analysis found - category: {analysis.get('category')}, date: {analysis.get('document_date')}")
     logger.info(f"[ANALYSIS-ROUTE] Returning analysis with keys: {list(analysis.keys())}")
     return analysis
+
+@router.put("/{doc_id}/lab-values/{index}")
+async def correct_lab_value(
+    doc_id: str,
+    index: int,
+    update: LabValueUpdate,
+    background_tasks: BackgroundTasks,
+    token: str = Depends(oauth2_scheme),
+    db=Depends(get_db),
+):
+    user = await get_current_user(token, db)
+    analysis = await db.analysis_results.find_one({"document_id": doc_id, "user_id": str(user["_id"])})
+    if not analysis:
+        raise HTTPException(404, "Analysis not found")
+    lab_values = analysis.get("extracted_data", {}).get("lab_values", [])
+    if not 0 <= index < len(lab_values):
+        raise HTTPException(404, "Lab value not found")
+    lab = await apply_lab_correction(db, analysis, index, update)
+    background_tasks.add_task(rebuild_document_chunks, db, analysis)
+    return lab
 
 @router.post("/chat")
 async def chat(

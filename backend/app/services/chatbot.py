@@ -10,11 +10,16 @@ async def generate_doctor_questions(db, user_id: str, user_profile: dict = None)
     logger.info(f"[ANALYSIS] Generating doctor questions for user: {user_id}")
     analyses = await get_user_analyses(db, user_id)
     questions = []
+    seen_tests = set()
     
-    for analysis in analyses[:5]:  # Last 5 analyses
+    for analysis in analyses[:5]:  # Last 5 analyses, newest first
         for lab in analysis.get("extracted_data", {}).get("lab_values", []):
-            if lab.get("status") in ["high", "low"]:
-                questions.append(f"My {lab['test']} is {lab['value']} {lab.get('unit', '')}, which is {lab['status']}. Should we adjust my treatment?")
+            name = lab.get("display_name") or lab.get("test", "")
+            if name.lower() in seen_tests:
+                continue
+            seen_tests.add(name.lower())
+            if lab.get("status") in ["high", "low", "critical"]:
+                questions.append(f"My {name} is {lab['value']} {lab.get('unit', '')}, which is {lab['status']}. Should we adjust my treatment?")
         
         if analysis.get("extracted_data", {}).get("diagnoses"):
             questions.append("Based on my recent results, do I need any medication adjustments?")
@@ -43,7 +48,7 @@ async def generate_doctor_questions(db, user_id: str, user_profile: dict = None)
     if not questions:
         questions.append("Should I schedule any follow-up tests based on my recent results?")
     
-    unique_questions = list(set(questions))[:10]  # Unique questions, max 10
+    unique_questions = list(dict.fromkeys(questions))[:10]
     logger.info(f"[ANALYSIS] Generated {len(unique_questions)} doctor questions")
     return unique_questions
 

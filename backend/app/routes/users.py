@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.models import ProfileUpdate
 from app.oauth2 import oauth2_scheme, AUTH_COOKIE_NAME
 from app.config import settings
+from app.services.report import build_doctor_report
 from app.services.user_data import delete_user_data, export_user_data
 from app.utils.security import get_current_user, verify_password
 from bson import ObjectId
@@ -60,6 +61,15 @@ async def export_my_data(token: str = Depends(oauth2_scheme), db=Depends(get_db)
         jsonable_encoder(data, custom_encoder={ObjectId: str}),
         headers={"Content-Disposition": 'attachment; filename="healthsync-export.json"'},
     )
+
+@router.get("/me/report")
+async def download_doctor_report(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
+    """PDF summary of vitals, lab results, medications, and questions for a doctor's visit."""
+    user = await get_current_user(token, db)
+    pdf = await build_doctor_report(db, user)
+    filename = f"healthsync-summary-{datetime.utcnow():%Y-%m-%d}.pdf"
+    return Response(pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
 @router.delete("/me")
 async def delete_my_account(

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { authService } from "../../services/api";
 import { Button } from "../ui/button";
+import { saveBlob } from "../../lib/download";
 
 const AccountPrivacyCard = () => {
   const [busy, setBusy] = useState(false);
@@ -17,17 +18,18 @@ const AccountPrivacyCard = () => {
     setMessage("");
     try {
       const res = await authService.exportData();
-      const url = URL.createObjectURL(res.data);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "healthsync-export.json";
-      link.click();
-      URL.revokeObjectURL(url);
+      saveBlob(res.data, "healthsync-export.json");
     } catch {
       setMessage("Could not export your data. Please try again.");
     } finally {
       setBusy(false);
     }
+  };
+
+  const handleLogout = async () => {
+    setBusy(true);
+    await authService.logout().catch(() => {});
+    goToLogin();
   };
 
   const handleLogoutAll = async () => {
@@ -58,11 +60,14 @@ const AccountPrivacyCard = () => {
     <div className="card-premium">
       <div className="mb-6">
         <h2 className="font-semibold text-slate-800">Privacy & Account</h2>
-        <p className="text-sm text-slate-500">Download your data, manage sessions, or delete your account</p>
+        <p className="text-sm text-slate-500">Sign out, download your data, or delete your account</p>
       </div>
 
       <div className="space-y-4">
         <div className="flex flex-wrap gap-3">
+          <Button onClick={handleLogout} disabled={busy} variant="secondary">
+            Sign out
+          </Button>
           <Button onClick={handleExport} disabled={busy} variant="secondary">
             Download my data
           </Button>

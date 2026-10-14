@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { analysisService, telegramService } from "../../services/api";
+import { analysisService, readingsService } from "../../services/api";
+import { useReportDownload } from "./useReportDownload";
 import { formatDateLocal } from "../../lib/utils";
 
 const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -242,13 +243,14 @@ const OverviewTab = ({ onNavigate, userConditions = [] }: OverviewTabProps) => {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [vitals, setVitals] = useState<VitalReading[]>([]);
   const [loading, setLoading] = useState(true);
+  const report = useReportDownload();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [analysesRes, vitalsRes] = await Promise.all([
           analysisService.getHistory(),
-          telegramService.getReadings()
+          readingsService.list()
         ]);
         setAnalyses(analysesRes.data || []);
         setVitals(vitalsRes.data || []);
@@ -501,6 +503,20 @@ const OverviewTab = ({ onNavigate, userConditions = [] }: OverviewTabProps) => {
           description="Get answers about your health data"
           action="Ask Now"
           onClick={() => onNavigate?.('chat')}
+        />
+        <QuickActionCard
+          icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+          title="Log a Reading"
+          description="Record glucose, blood pressure, or weight"
+          action="Add Reading"
+          onClick={() => onNavigate?.('readings')}
+        />
+        <QuickActionCard
+          icon="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          title="Doctor Visit Report"
+          description={report.error || "PDF summary of vitals, lab results, and medications"}
+          action={report.downloading ? "Preparing..." : "Download PDF"}
+          onClick={report.downloading ? undefined : report.download}
         />
       </div>
     </div>

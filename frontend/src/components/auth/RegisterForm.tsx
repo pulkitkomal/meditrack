@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { authService } from "../../services/api";
 import type { User } from "../../types";
-import PrivacyPolicyContent from "../legal/PrivacyPolicyContent";
+import LegalModal from "../legal/LegalModal";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -42,19 +42,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-8 bg-[#f2f2f7]">
-      {showPrivacy && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-surface-xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-glass-elevated">
-            <div className="flex items-center justify-between p-5 border-b border-glass-border-subtle">
-              <h2 className="text-xl font-bold text-slate-800">Privacy Policy</h2>
-              <button type="button" onClick={() => setShowPrivacy(false)} className="p-2 hover:bg-glass-tint rounded-glass-sm">
-                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            <PrivacyPolicyContent />
-          </div>
-        </div>
-      )}
+      {showPrivacy && <LegalModal document="privacy" onClose={() => setShowPrivacy(false)} />}
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">

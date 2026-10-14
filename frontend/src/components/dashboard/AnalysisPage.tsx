@@ -3,18 +3,22 @@ import { useParams, useNavigate } from "react-router-dom";
 import { analysisService, documentService } from "../../services/api";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
+import LabValuesTable, { type LabValue } from "./LabValuesTable";
+
+type View = "extracted" | "split" | "original";
 
 const AnalysisPage = () => {
   const { docId } = useParams<{ docId: string }>();
   const [analysis, setAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showExtracted, setShowExtracted] = useState(true);
+  const [view, setView] = useState<View>("extracted");
+  const showOriginal = view !== "extracted";
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
   const [loadingOriginal, setLoadingOriginal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!showExtracted && docId && !originalUrl) {
+    if (showOriginal && docId && !originalUrl) {
       setLoadingOriginal(true);
       documentService.getFile(docId)
         .then(res => {
@@ -26,11 +30,11 @@ const AnalysisPage = () => {
         })
         .finally(() => setLoadingOriginal(false));
     }
-    if (showExtracted && originalUrl) {
+    if (!showOriginal && originalUrl) {
       URL.revokeObjectURL(originalUrl);
       setOriginalUrl(null);
     }
-  }, [showExtracted, docId]);
+  }, [showOriginal, docId]);
 
   useEffect(() => {
     const fetchAnalysis = async () => {
@@ -83,60 +87,8 @@ const AnalysisPage = () => {
     });
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-blue-100 px-4 md:px-8 py-4">
-        <div className="container mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate(-1)}
-              className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">Analysis Details</h1>
-              <p className="text-sm text-gray-500">
-                {analysis.category} • {formatDate(analysis.document_date || analysis.analysis_date)}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Toggle Button */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setShowExtracted(true)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  showExtracted 
-                    ? "bg-white text-blue-600 shadow-sm" 
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Extracted
-              </button>
-              <button
-                onClick={() => setShowExtracted(false)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  !showExtracted 
-                    ? "bg-white text-purple-600 shadow-sm" 
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Original
-              </button>
-            </div>
-            <Button variant="outline" onClick={() => navigate("/dashboard?tab=overview")} className="hidden md:flex">
-              Back to Dashboard
-            </Button>
-          </div>
-        </div>
-      </nav>
-
-      <main className="container mx-auto p-4 md:p-8 space-y-6">
-        {showExtracted ? (
-          <>
+  const extractedContent = (
+    <>
           {analysis.extracted_data?.summary && (
           <Card className="bg-white/90 backdrop-blur-sm rounded-glass shadow-lg border border-blue-100">
             <CardHeader className="border-b border-gray-100">
@@ -171,55 +123,16 @@ const AnalysisPage = () => {
               </div>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Test</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Value</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Reference Range</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analysis.extracted_data.lab_values.map((lab: any, idx: number) => (
-                      <tr key={idx} className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors">
-                        <td className="py-4 px-4 text-gray-800 font-medium">{lab.display_name || lab.test}</td>
-                        <td className="py-4 px-4 text-gray-700">
-                          <span className="font-semibold">{lab.value}</span> {lab.unit}
-                        </td>
-                        <td className="py-4 px-4 text-gray-500">{lab.reference_range || "N/A"}</td>
-                        <td className="py-4 px-4">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            lab.status === "high"
-                              ? "bg-red-100 text-red-700 border border-red-200"
-                              : lab.status === "low"
-                              ? "bg-blue-100 text-blue-700 border border-blue-200"
-                              : "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                          }`}>
-                            {lab.status === "high" && (
-                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                              </svg>
-                            )}
-                            {lab.status === "low" && (
-                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            )}
-                            {lab.status === "normal" && (
-                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                            {lab.status ? lab.status.charAt(0).toUpperCase() + lab.status.slice(1) : 'Unknown'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <p className="text-sm text-gray-500 mb-4">
+                Values are read from your document by AI. If one looks wrong, compare it with the{" "}
+                <button onClick={() => setView(window.innerWidth >= 1024 ? "split" : "original")} className="text-teal-600 hover:underline font-medium">original</button>
+                {" "}and use the pencil to correct it.
+              </p>
+              <LabValuesTable
+                docId={docId!}
+                labValues={analysis.extracted_data.lab_values as LabValue[]}
+                onChange={(labs) => setAnalysis({ ...analysis, extracted_data: { ...analysis.extracted_data, lab_values: labs } })}
+              />
             </CardContent>
           </Card>
         )}
@@ -312,10 +225,10 @@ const AnalysisPage = () => {
             </CardContent>
           </Card>
         )}
-          </>
-        ) : (
-          <>
-            {/* Original Document View */}
+    </>
+  );
+
+  const originalContent = (
             <Card className="bg-white/90 backdrop-blur-sm rounded-glass shadow-lg border border-blue-100">
               <CardHeader className="border-b border-gray-100">
                 <div className="flex items-center gap-3">
@@ -359,8 +272,61 @@ const AnalysisPage = () => {
                 )}
               </CardContent>
             </Card>
-          </>
-        )}
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <nav className="bg-white/80 backdrop-blur-sm border-b border-blue-100 px-4 md:px-8 py-4">
+        <div className="container mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">Analysis Details</h1>
+              <p className="text-sm text-gray-500">
+                {analysis.category} • {formatDate(analysis.document_date || analysis.analysis_date)}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex bg-gray-100 rounded-lg p-1" role="group" aria-label="Document view">
+              {([
+                ["extracted", "Extracted", ""],
+                ["split", "Side by side", "hidden lg:block"],
+                ["original", "Original", ""],
+              ] as [View, string, string][]).map(([id, label, extra]) => (
+                <button
+                  key={id}
+                  onClick={() => setView(id)}
+                  aria-pressed={view === id}
+                  className={`${extra} px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    view === id ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <Button variant="outline" onClick={() => navigate("/dashboard?tab=overview")} className="hidden md:flex">
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
+      </nav>
+
+      <main className="container mx-auto p-4 md:p-8 space-y-6">
+        {view === "split" ? (
+          <div className="grid lg:grid-cols-2 gap-6 items-start">
+            <div className="space-y-6">{extractedContent}</div>
+            <div className="lg:sticky lg:top-4">{originalContent}</div>
+          </div>
+        ) : view === "extracted" ? extractedContent : originalContent}
       </main>
     </div>
   );

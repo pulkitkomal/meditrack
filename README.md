@@ -59,6 +59,10 @@ The app features a premium, clean design inspired by Apple Health:
 
 ## Recent Updates
 
+- **Vitals on the website**: Add, edit, and delete glucose (mg/dL or mmol/L), blood pressure, and weight readings from the Vitals tab, not just Telegram
+- **Correct AI-extracted lab values**: Fix a misread value on any record; the AI's original is kept, and the health score, chat assistant, and report use the corrected value. A side-by-side view shows the original document next to the values on wide screens
+- **Doctor visit report**: Download a PDF with 30-day vitals, the last 12 months of lab results (out-of-range first, with previous values), medications, diagnoses, and questions to ask
+
 - **Semantic Search for Chatbot**: AI-powered medical advisor now uses sentence-transformers embeddings with cross-encoder reranking for highly relevant context retrieval
 - **Improved PDF Processing**: Added poppler-utils (pdftoppm/pdftotext) as primary PDF engine with pymupdf fallback for better compatibility
 - **S3 Document Extraction**: Documents stored on S3 are now downloaded locally for text extraction and analysis
