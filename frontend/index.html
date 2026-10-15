@@ -10,7 +10,19 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" href="/icon-192.png" />
-    <title>HealthSync - Personal Health Records</title>
+    <title>Sehat - Personal Health Records</title>
+    <script>
+      ["theme", "chat-conversation"].forEach(function (key) {
+        var old = localStorage.getItem("healthsync-" + key);
+        if (old !== null && localStorage.getItem("sehat-" + key) === null) localStorage.setItem("sehat-" + key, old);
+        localStorage.removeItem("healthsync-" + key);
+      });
+      (function () {
+        var pref = localStorage.getItem("sehat-theme") || "system";
+        var dark = pref === "dark" || (pref === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.classList.add("dark");
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

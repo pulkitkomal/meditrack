@@ -26,17 +26,58 @@
     --radius: 14px;
   }
 
+  .dark {
+    --background: 240 4% 7%;
+    --foreground: 240 5% 75%;
+    --card: 240 4% 15%;
+    --card-foreground: 240 5% 75%;
+    --secondary: 240 4% 15%;
+    --secondary-foreground: 240 5% 75%;
+    --muted: 240 4% 18%;
+    --muted-foreground: 240 4% 60%;
+    --border: 240 4% 22%;
+    --input: 240 4% 22%;
+  }
+
+  .dark .glass-shine::before,
+  .dark .glass-shine-subtle::before {
+    opacity: 0.15;
+  }
+
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-[#f2f2f7] text-[#636366] antialiased;
+    @apply bg-slate-50 text-slate-600 antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply text-[#3a3a3c] font-bold tracking-tight text-left;
+    @apply text-slate-800 font-bold tracking-tight;
+  }
+
+  /* iOS gives number/date inputs an intrinsic width that stops them shrinking in flex and grid rows. */
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+    min-width: 0;
+  }
+
+  input[type="checkbox"], input[type="radio"] {
+    flex-shrink: 0;
+    accent-color: rgb(var(--c-teal-600));
+  }
+
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"] {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* iOS centres date values and collapses empty date inputs to zero height. */
+  input::-webkit-date-and-time-value {
+    text-align: left;
+    min-height: 1.5em;
   }
 }
 
@@ -137,6 +178,13 @@
     @apply w-full px-4 py-3 rounded-glass border border-slate-200 bg-glass-light backdrop-blur-[8px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all;
   }
 
+  select.input-premium {
+    @apply appearance-none pr-10 bg-no-repeat;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+    background-size: 1.1rem;
+  }
+
   .section-title {
     @apply text-xl font-bold text-slate-800 mb-4;
   }
@@ -217,3 +265,26 @@
     -webkit-backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-saturate);
   }
 }
+
+@keyframes progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+@media (max-width: 1023px) {
+  html {
+    scroll-padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+}
+
+.chat-markdown > * + * { margin-top: 0.5rem; }
+.chat-markdown p { line-height: 1.6; }
+.chat-markdown strong { font-weight: 600; color: rgb(var(--c-slate-800)); }
+.chat-markdown h1, .chat-markdown h2, .chat-markdown h3, .chat-markdown h4 { font-weight: 600; color: rgb(var(--c-slate-800)); margin-top: 0.75rem; }
+.chat-markdown ul { list-style: disc; padding-left: 1.25rem; }
+.chat-markdown ol { list-style: decimal; padding-left: 1.25rem; }
+.chat-markdown li + li { margin-top: 0.25rem; }
+.chat-markdown a { color: rgb(var(--c-teal-700)); text-decoration: underline; }
+.chat-markdown code { background: rgb(var(--c-slate-100)); padding: 0 0.25rem; border-radius: 0.25rem; }
+.chat-markdown table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.chat-markdown th, .chat-markdown td { border-bottom: 1px solid rgb(var(--c-slate-200)); padding: 0.25rem 0.5rem; text-align: left; }

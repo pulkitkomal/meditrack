@@ -128,6 +128,7 @@ async def upload_document(
 async def bulk_upload_documents(
     files: list[UploadFile] = File(...),
     category: str = Form(...),
+    document_date: str = Form(None),
     token: str = Depends(oauth2_scheme),
     db=Depends(get_db)
 ):
@@ -142,6 +143,13 @@ async def bulk_upload_documents(
     
     user = await get_current_user(token, db)
     logger.info(f"[BULK-UPLOAD] User authenticated: {user['_id']}")
+
+    given_date = None
+    if document_date:
+        try:
+            given_date = datetime.fromisoformat(document_date.replace('Z', '+00:00')).replace(tzinfo=None)
+        except ValueError:
+            raise HTTPException(400, "Invalid document date")
     
     uploaded_docs = []
     errors = []
@@ -159,8 +167,8 @@ async def bulk_upload_documents(
                 local_temp_path = await download_s3_file(file_path_str)
             extract_path = local_temp_path if local_temp_path else file_path_str
             
-            parsed_date = datetime.utcnow()
-            if extract_path.lower().endswith('.pdf'):
+            parsed_date = given_date or datetime.utcnow()
+            if not given_date and extract_path.lower().endswith('.pdf'):
                 try:
                     text = extract_text_from_pdf(extract_path)
                     if text:

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authService } from "../../services/api";
 import type { User } from "../../types";
-import PrivacyPolicyContent from "../legal/PrivacyPolicyContent";
+import LegalModal, { type LegalDocument } from "../legal/LegalModal";
 
 interface LoginFormProps {
   setUser: (user: User) => void;
@@ -13,8 +13,7 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showTerms, setShowTerms] = useState(false);
-  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [legal, setLegal] = useState<LegalDocument | null>(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,57 +33,11 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#f2f2f7]">
-      {/* Terms Modal */}
-      {showTerms && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-surface-xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-glass-elevated">
-            <div className="flex items-center justify-between p-5 border-b border-glass-border-subtle">
-              <h2 className="text-xl font-bold text-slate-800">Terms & Conditions</h2>
-              <button onClick={() => setShowTerms(false)} className="p-2 hover:bg-glass-tint rounded-glass-sm">
-                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto max-h-[60vh] text-sm text-slate-600 space-y-4">
-              <p className="text-slate-500 text-xs">Effective Date: May 8, 2026</p>
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-2">1. Acceptance of Terms</h3>
-                <p>By accessing and using HealthSync, you agree to be bound by these Terms and Conditions.</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-2">2. Description of Service</h3>
-                <p>HealthSync provides a platform for managing personal health records with AI-powered document analysis, Telegram bot integration, and medical advisor chatbot.</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-2">3. AI Health Advisor</h3>
-                <p>The AI-powered medical advisor provides general health information only. <span className="font-semibold text-red-600">NOT a replacement for professional medical advice.</span></p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-2">4. Limitation of Liability</h3>
-                <p>HealthSync is provided "as is" without warranties.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Privacy Modal */}
-      {showPrivacy && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-surface-xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-glass-elevated">
-            <div className="flex items-center justify-between p-5 border-b border-glass-border-subtle">
-              <h2 className="text-xl font-bold text-slate-800">Privacy Policy</h2>
-              <button onClick={() => setShowPrivacy(false)} className="p-2 hover:bg-glass-tint rounded-glass-sm">
-                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            <PrivacyPolicyContent />
-          </div>
-        </div>
-      )}
+    <div className="min-h-screen flex bg-slate-50">
+      {legal && <LegalModal document={legal} onClose={() => setLegal(null)} />}
 
       {/* Left Side - Liquid Glass Hero */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-teal-50 to-[#f2f2f7]">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-teal-50 to-slate-50">
         <div className="absolute top-20 left-20 w-64 h-64 bg-teal-200/30 rounded-full blur-3xl"></div>
         <div className="absolute bottom-32 right-16 w-80 h-80 bg-teal-100/20 rounded-full blur-3xl"></div>
         <div className="absolute top-1/3 right-1/4 w-40 h-40 bg-teal-300/10 rounded-full blur-2xl"></div>
@@ -96,7 +49,7 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
-            <h2 className="text-4xl font-bold text-slate-800 mb-4">HealthSync</h2>
+            <h2 className="text-4xl font-bold text-slate-800 mb-4">Sehat</h2>
             <p className="text-lg text-slate-500 text-center max-w-md mb-6">Your personal health companion for managing medical records intelligently</p>
             <div className="flex gap-3">
               <div className="glass-surface-sm flex items-center gap-2 px-4 py-2">
@@ -126,7 +79,7 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-slate-800">HealthSync</h1>
+            <h1 className="text-3xl font-bold text-slate-800">Sehat</h1>
             <p className="text-slate-500 mt-1">Personal Health Records</p>
           </div>
           
@@ -139,11 +92,13 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
             
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="relative">
-                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 011-.908 6 6 0 011.908 0" />
                 </svg>
                 <input 
                   placeholder="Email address" 
+                  aria-label="Email address"
+                  autoComplete="email"
                   type="email" 
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
@@ -152,11 +107,13 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
                 />
               </div>
               <div className="relative">
-                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 <input 
                   placeholder="Password" 
+                  aria-label="Password"
+                  autoComplete="current-password"
                   type="password" 
                   value={password} 
                   onChange={e => setPassword(e.target.value)} 
@@ -187,11 +144,11 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
 
             {/* Footer */}
             <div className="mt-8 pt-6 border-t border-glass-border-subtle text-center">
-              <p className="text-sm text-slate-400">© {new Date().getFullYear()} HealthSync. All rights reserved.</p>
+              <p className="text-sm text-slate-400">© {new Date().getFullYear()} Sehat. All rights reserved.</p>
               <div className="flex justify-center gap-4 mt-2">
-                <button onClick={() => setShowTerms(true)} className="text-sm text-slate-500 hover:text-teal-600">Terms & Conditions</button>
+                <button onClick={() => setLegal("terms")} className="text-sm text-slate-500 hover:text-teal-600">Terms & Conditions</button>
                 <span className="text-slate-200">|</span>
-                <button onClick={() => setShowPrivacy(true)} className="text-sm text-slate-500 hover:text-teal-600">Privacy Policy</button>
+                <button onClick={() => setLegal("privacy")} className="text-sm text-slate-500 hover:text-teal-600">Privacy Policy</button>
               </div>
             </div>
           </div>

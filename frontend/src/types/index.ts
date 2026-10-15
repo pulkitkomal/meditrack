@@ -10,6 +10,7 @@ export interface User {
   blood_type?: string;
   height?: number;
   weight?: number;
+  dry_weight?: number;
   emergency_contact?: string;
   medical_conditions?: string[];
   allergies?: string[];

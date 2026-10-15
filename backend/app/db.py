@@ -16,6 +16,7 @@ async def ensure_indexes(db) -> None:
     await db.document_chunks.create_index("user_id")
     await db.document_chunks.create_index("document_id")
     await db.health_readings.create_index([("user_id", ASCENDING), ("type", ASCENDING), ("timestamp", DESCENDING)])
+    await db.chat_conversations.create_index([("user_id", ASCENDING), ("updated_at", DESCENDING)])
     await db.token_usage.create_index([("user_id", ASCENDING), ("timestamp", DESCENDING)])
 
     await db.revoked_tokens.create_index("expires_at", expireAfterSeconds=0)

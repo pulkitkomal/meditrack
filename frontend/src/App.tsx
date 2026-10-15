@@ -35,8 +35,8 @@ const AppContent = ({ user, setUser }: { user: User | null; setUser: (u: User | 
   }, [user, loading, navigate]);
 
   const loadingScreen = (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      Loading...
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500" role="status">
+      <span className="w-10 h-10 rounded-xl bg-teal-600 animate-pulse" aria-label="Loading" />
     </div>
   );
 

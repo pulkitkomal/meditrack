@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "icon.svg"],
       manifest: {
-        name: "HealthSync",
-        short_name: "HealthSync",
+        name: "Sehat",
+        short_name: "Sehat",
         description: "Personal Health Records App",
         theme_color: "#0d9488",
         background_color: "#ffffff",

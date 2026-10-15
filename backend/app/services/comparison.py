@@ -191,19 +191,29 @@ def predict_conditions(analyses: List[Dict[str, Any]]) -> List[Dict]:
     logger.info(f"[COMPARISON] Latest analysis has {len(lab_values)} lab values")
     
     # Simple rule-based predictions
-    lab_dict = {lab["test"].lower(): lab for lab in lab_values}
-    
+    lab_dict = {(lab.get("display_name") or lab.get("test") or "").lower(): lab for lab in lab_values}
+
+    def numeric(name):
+        try:
+            return float(lab_dict[name]["value"])
+        except (KeyError, TypeError, ValueError):
+            return None
+
     # Diabetes prediction
-    if "hba1c" in lab_dict or "glucose" in lab_dict:
-        hba1c = lab_dict.get("hba1c", {})
-        glucose = lab_dict.get("glucose", {})
-        if hba1c.get("value", 0) > 6.5 or glucose.get("value", 0) > 126:
-            predictions.append({
-                "condition": "Diabetes",
-                "probability": 0.8,
-                "reasoning": f"HbA1c: {hba1c.get('value')}%, Glucose: {glucose.get('value')} mg/dL"
-            })
-            logger.info(f"[COMPARISON] Diabetes prediction added")
+    hba1c = numeric("hba1c")
+    glucose = next((v for v in (numeric("fasting glucose"), numeric("glucose")) if v is not None), None)
+    if (hba1c is not None and hba1c > 6.5) or (glucose is not None and glucose > 126):
+        reasons = []
+        if hba1c is not None:
+            reasons.append(f"HbA1c: {hba1c:g}%")
+        if glucose is not None:
+            reasons.append(f"Glucose: {glucose:g} mg/dL")
+        predictions.append({
+            "condition": "Diabetes",
+            "probability": 0.8,
+            "reasoning": ", ".join(reasons)
+        })
+        logger.info(f"[COMPARISON] Diabetes prediction added")
     
     # Hypertension prediction
     vitals = latest.get("extracted_data", {}).get("vitals", {})

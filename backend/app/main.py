@@ -8,7 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from contextlib import asynccontextmanager
 from app.config import settings
 from app.db import ensure_indexes
-from app.routes import auth_router, documents_router, users_router, analysis_router, telegram_router
+from app.routes import auth_router, documents_router, users_router, analysis_router, telegram_router, readings_router, chat_router
 
 # Configure comprehensive logging
 logging.basicConfig(
@@ -47,6 +47,8 @@ app.include_router(documents_router, prefix="/api/documents", tags=["documents"]
 app.include_router(users_router, prefix="/api/users", tags=["users"])
 app.include_router(analysis_router, prefix="/api/analysis", tags=["analysis"])
 app.include_router(telegram_router, prefix="/api/telegram", tags=["telegram"])
+app.include_router(readings_router, prefix="/api/readings", tags=["readings"])
+app.include_router(chat_router, prefix="/api/chat", tags=["chat"])
 
 @app.middleware("http")
 async def log_requests(request, call_next):

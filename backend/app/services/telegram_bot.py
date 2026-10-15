@@ -75,7 +75,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             dialysis_msg = "\n• Send your weight (e.g., `70.5 kg`)" if "weight" in tracking_types else ""
             
             await update.message.reply_text(
-                "✅ *Successfully connected to HealthSync!*\n\n"
+                "✅ *Successfully connected to Sehat!*\n\n"
                 "Your Telegram is now linked to your account. You can:\n"
                 f"• Send glucose readings (e.g., `150`)\n"
                 f"• Send blood pressure (e.g., `120/80`){dialysis_msg}\n"
@@ -89,7 +89,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
     
     await update.message.reply_text(
-        "🏥 *HealthSync Health Bot*\n\n"
+        "🏥 *Sehat Health Bot*\n\n"
         "Welcome! I'll help you track your health readings.\n\n"
         "📝 *How to use:*\n"
         "• Send text like `150` for glucose (mg/dL)\n"
@@ -128,7 +128,7 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     user = await db.users.find_one({"telegram_chat_id": str(chat_id)})
     if not user:
-        await update.message.reply_text("❌ Your Telegram is not linked to HealthSync. Please connect from the Profile page.")
+        await update.message.reply_text("❌ Your Telegram is not linked to Sehat. Please connect from the Profile page.")
         return
     
     # Get latest readings
@@ -177,7 +177,7 @@ async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         {"$set": {"telegram_enabled": False, "notification_times": []}}
     )
     
-    await update.message.reply_text("✅ Notifications disabled. You can re-enable them from the HealthSync Profile page.")
+    await update.message.reply_text("✅ Notifications disabled. You can re-enable them from the Sehat Profile page.")
 
 async def settings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /settings command"""
@@ -187,7 +187,7 @@ async def settings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     user = await db.users.find_one({"telegram_chat_id": str(chat_id)})
     if not user:
-        await update.message.reply_text("❌ Your Telegram is not linked to HealthSync.")
+        await update.message.reply_text("❌ Your Telegram is not linked to Sehat.")
         return
     
     tracking = user.get("tracking_types", [])
@@ -200,7 +200,7 @@ async def settings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg += f"Reminders: {len(times)} times daily\n"
     if times:
         msg += f"Times: {', '.join(times)}\n"
-    msg += "\n📱 To change settings, visit the HealthSync Profile page."
+    msg += "\n📱 To change settings, visit the Sehat Profile page."
     
     await update.message.reply_text(msg, parse_mode="Markdown")
 
@@ -272,7 +272,7 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     user = await db.users.find_one({"telegram_chat_id": str(chat_id)})
     if not user:
-        await update.message.reply_text("❌ Your Telegram is not linked to HealthSync.")
+        await update.message.reply_text("❌ Your Telegram is not linked to Sehat.")
         return
     
     # Parse the value
@@ -318,7 +318,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     user = await db.users.find_one({"telegram_chat_id": str(chat_id)})
     if not user:
-        await update.message.reply_text("❌ Your Telegram is not linked to HealthSync.")
+        await update.message.reply_text("❌ Your Telegram is not linked to Sehat.")
         return
     
     await update.message.reply_text("📸 Processing image...")

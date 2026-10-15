@@ -14,6 +14,7 @@ export const authService = {
   logout: () => api.post("/auth/logout"),
   logoutAll: () => api.post("/auth/logout-all"),
   exportData: () => api.get("/users/me/export", { responseType: "blob" }),
+  downloadReport: () => api.get("/users/me/report", { responseType: "blob" }),
   deleteAccount: (password: string) => api.delete("/users/me", { data: { password } }),
   getCurrentUser: () => api.get("/users/me"),
   updateProfile: (data: any) => api.patch("/users/me", data)
@@ -21,10 +22,11 @@ export const authService = {
 
 export const documentService = {
   upload: (data: FormData) => api.post("/documents/upload", data),
-  bulkUpload: (files: File[], category: string) => {
+  bulkUpload: (files: File[], category: string, documentDate?: string) => {
     const formData = new FormData();
     files.forEach(file => formData.append("files", file));
     formData.append("category", category);
+    if (documentDate) formData.append("document_date", documentDate);
     return api.post("/documents/bulk-upload", formData);
   },
   list: (params?: { category?: string; date_from?: string; date_to?: string; upload_from?: string; upload_to?: string }) => api.get("/documents/", { params: params || {} }),
@@ -45,14 +47,116 @@ export const analysisService = {
   getTask: (taskId: string) => api.get(`/analysis/tasks/${taskId}`),
   deleteTask: (taskId: string) => api.delete(`/analysis/tasks/${taskId}`),
   processQueue: (maxTasks?: number) => api.post("/analysis/process-queue", { max_tasks: maxTasks }),
-  chat: (message: string) => api.post("/analysis/chat", { message })
+  correctLabValue: (docId: string, index: number, data: LabValueUpdate) => api.put(`/analysis/${docId}/lab-values/${index}`, data)
+};
+
+export type ReadingType = "glucose" | "bp" | "weight";
+
+export interface ReadingInput {
+  type: ReadingType;
+  value?: number;
+  unit?: "mg/dL" | "mmol/L" | "kg";
+  systolic?: number;
+  diastolic?: number;
+  timestamp?: string;
+}
+
+export interface LabValueUpdate {
+  test?: string;
+  value: number | string;
+  unit?: string;
+  reference_range?: string;
+  status: "normal" | "high" | "low" | "critical";
+}
+
+export const readingsService = {
+  list: (type?: ReadingType) => api.get("/readings/", { params: type ? { type } : {} }),
+  summary: () => api.get("/readings/summary"),
+  create: (data: ReadingInput) => api.post("/readings/", data),
+  update: (id: string, data: ReadingInput) => api.put(`/readings/${id}`, data),
+  remove: (id: string) => api.delete(`/readings/${id}`)
 };
 
 export const telegramService = {
   getConfig: () => api.get("/telegram/config"),
   updateConfig: (data: any) => api.put("/telegram/config", data),
   disconnect: () => api.post("/telegram/disconnect"),
-  getReadings: (type?: string) => api.get("/telegram/readings", { params: type ? { type } : {} }),
-  getSummary: () => api.get("/telegram/readings/summary"),
   generateLink: () => api.post("/users/telegram/generate-link")
+};
+
+export interface ChatSource {
+  doc_id: string;
+  title: string;
+  category: string;
+  date: string | null;
+}
+
+export interface ChatAllowance {
+  used: number;
+  limit: number;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  sources?: ChatSource[];
+  urgent?: boolean;
+  feedback?: "up" | "down" | null;
+  created_at?: string;
+}
+
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  updated_at: string;
+  message_count: number;
+}
+
+export type ChatEvent =
+  | { type: "start"; conversation_id: string; title: string }
+  | { type: "delta"; text: string }
+  | { type: "done"; message_index: number; sources: ChatSource[]; urgent: boolean; allowance: ChatAllowance };
+
+export class ChatRequestError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+  }
+}
+
+export const chatService = {
+  status: () => api.get<{ suggestions: string[]; allowance: ChatAllowance }>("/chat/status"),
+  listConversations: () => api.get<ConversationSummary[]>("/chat/conversations"),
+  getConversation: (id: string) => api.get<ConversationSummary & { messages: ChatMessage[] }>(`/chat/conversations/${id}`),
+  deleteConversation: (id: string) => api.delete(`/chat/conversations/${id}`),
+  deleteAllConversations: () => api.delete("/chat/conversations"),
+  rate: (id: string, index: number, rating: "up" | "down" | null) =>
+    api.post(`/chat/conversations/${id}/messages/${index}/feedback`, { rating }),
+
+  /** Streams a reply as newline-delimited JSON events; axios can't read streams in the browser. */
+  async send(message: string, conversationId: string | null, onEvent: (event: ChatEvent) => void, signal?: AbortSignal) {
+    const response = await fetch("/api/chat/messages", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, conversation_id: conversationId }),
+      signal,
+    });
+    if (!response.ok || !response.body) {
+      const body = await response.json().catch(() => null);
+      const detail = typeof body?.detail === "string" ? body.detail : "Sorry, something went wrong. Please try again.";
+      throw new ChatRequestError(detail, response.status);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) if (line.trim()) onEvent(JSON.parse(line));
+    }
+    if (buffer.trim()) onEvent(JSON.parse(buffer));
+  },
 };

@@ -1,11 +1,14 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Body
 from bson import ObjectId
 from pathlib import Path
+from app.utils.age import user_age
+from app.models import LabValueUpdate
 from app.oauth2 import oauth2_scheme
 from app.utils.security import get_current_user
 from app.services.analysis import get_user_analyses, get_analysis_for_document, analyze_document, save_analysis_result
 from app.services.chatbot import generate_doctor_questions, chat_with_medical_advisor
+from app.routes.chat import ensure_allowance
 from app.services.comparison import compare_lab_values, calculate_health_score, get_active_conditions, predict_conditions, get_latest_key_metrics
 from app.services.token_tracker import get_user_usage, get_usage_history, get_tokens_used_since
 from app.config import settings
@@ -14,6 +17,7 @@ from datetime import datetime, timedelta
 CHAT_MAX_MESSAGE_CHARS = 4000
 from app.services.task_queue import create_analysis_task, get_task_status, get_user_tasks
 from app.services.user_data import delete_document_data
+from app.services.corrections import apply_lab_correction, rebuild_document_chunks
 
 logger = logging.getLogger("medical-records-app")
 
@@ -29,6 +33,11 @@ async def get_usage_stats(token: str = Depends(oauth2_scheme), db=Depends(get_db
     user = await get_current_user(token, db)
     logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}")
     result = await get_user_usage(db, str(user["_id"]))
+    since = datetime.utcnow() - timedelta(days=1)
+    result["chat_today"] = {
+        "used": await get_tokens_used_since(db, str(user["_id"]), since, category="chat"),
+        "limit": settings.DAILY_CHAT_TOKEN_LIMIT,
+    }
     logger.info(f"[ANALYSIS-ROUTE] Usage stats returned")
     return result
 
@@ -158,6 +167,7 @@ async def get_history(category: str = None, token: str = Depends(oauth2_scheme),
             analysis["document_date"] = doc["document_date"]
         else:
             analysis["document_date"] = analysis.get("analysis_date")
+        analysis["title"] = (doc.get("predicted_title") or doc.get("original_name")) if doc else None
     
     # Sort by document_date
     analyses.sort(key=lambda x: x.get("document_date", x.get("analysis_date", "")), reverse=True)
@@ -191,8 +201,8 @@ async def get_summary(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     logger.info(f"[ANALYSIS-ROUTE] Key metrics extracted: {len(latest_metrics)} items")
     
     profile_info = {}
-    if user.get("age"):
-        profile_info["age"] = user["age"]
+    if user_age(user):
+        profile_info["age"] = user_age(user)
     if user.get("gender"):
         profile_info["gender"] = user["gender"]
     if user.get("blood_type"):
@@ -221,7 +231,7 @@ async def get_doctor_questions(token: str = Depends(oauth2_scheme), db=Depends(g
     logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}")
     
     user_profile = {
-        "age": user.get("age"),
+        "age": user_age(user),
         "gender": user.get("gender"),
         "blood_type": user.get("blood_type"),
         "medical_conditions": user.get("medical_conditions", []),
@@ -277,10 +287,31 @@ async def get_analysis(doc_id: str, token: str = Depends(oauth2_scheme), db=Depe
         analysis["document_date"] = doc["document_date"]
     else:
         analysis["document_date"] = analysis.get("analysis_date")
+    analysis["title"] = doc.get("predicted_title") or doc.get("original_name")
     
     logger.info(f"[ANALYSIS-ROUTE] Analysis found - category: {analysis.get('category')}, date: {analysis.get('document_date')}")
     logger.info(f"[ANALYSIS-ROUTE] Returning analysis with keys: {list(analysis.keys())}")
     return analysis
+
+@router.put("/{doc_id}/lab-values/{index}")
+async def correct_lab_value(
+    doc_id: str,
+    index: int,
+    update: LabValueUpdate,
+    background_tasks: BackgroundTasks,
+    token: str = Depends(oauth2_scheme),
+    db=Depends(get_db),
+):
+    user = await get_current_user(token, db)
+    analysis = await db.analysis_results.find_one({"document_id": doc_id, "user_id": str(user["_id"])})
+    if not analysis:
+        raise HTTPException(404, "Analysis not found")
+    lab_values = analysis.get("extracted_data", {}).get("lab_values", [])
+    if not 0 <= index < len(lab_values):
+        raise HTTPException(404, "Lab value not found")
+    lab = await apply_lab_correction(db, analysis, index, update)
+    background_tasks.add_task(rebuild_document_chunks, db, analysis)
+    return lab
 
 @router.post("/chat")
 async def chat(
@@ -290,13 +321,8 @@ async def chat(
 ):
     logger.info(f"[ANALYSIS-ROUTE] POST /chat - Medical advisor chat")
     user = await get_current_user(token, db)
-    since = datetime.utcnow() - timedelta(days=1)
-    if await get_tokens_used_since(db, str(user["_id"]), since, category="chat") >= settings.DAILY_CHAT_TOKEN_LIMIT:
-        logger.warning(f"[ANALYSIS-ROUTE] Daily chat quota reached for user {user['_id']}")
-        raise HTTPException(429, "You've reached today's chat limit. Please try again tomorrow.")
-    logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}, message length: {len(message)}")
-    
-    result = await chat_with_medical_advisor(db, str(user["_id"]), message)
+    await ensure_allowance(db, str(user["_id"]))
+    result = await chat_with_medical_advisor(db, user, message.strip())
     logger.info(f"[ANALYSIS-ROUTE] Chat response ready, sources: {len(result.get('sources', []))}")
     return result
 

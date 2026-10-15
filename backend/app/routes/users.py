@@ -5,9 +5,11 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Body, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from app.utils.age import age_from_dob, user_age
 from app.models import ProfileUpdate
 from app.oauth2 import oauth2_scheme, AUTH_COOKIE_NAME
 from app.config import settings
+from app.services.report import build_doctor_report
 from app.services.user_data import delete_user_data, export_user_data
 from app.utils.security import get_current_user, verify_password
 from bson import ObjectId
@@ -33,7 +35,7 @@ def serialize_user(user: dict) -> dict:
         "last_name": user["last_name"],
         "role": user.get("role", "user"),
         "gender": user.get("gender"),
-        "age": user.get("age"),
+        "age": user_age(user),
         "date_of_birth": user.get("date_of_birth"),
         "blood_type": user.get("blood_type"),
         "height": user.get("height"),
@@ -58,8 +60,17 @@ async def export_my_data(token: str = Depends(oauth2_scheme), db=Depends(get_db)
     logger.info(f"[USER] Exported data for user {user['_id']}")
     return JSONResponse(
         jsonable_encoder(data, custom_encoder={ObjectId: str}),
-        headers={"Content-Disposition": 'attachment; filename="healthsync-export.json"'},
+        headers={"Content-Disposition": 'attachment; filename="sehat-export.json"'},
     )
+
+@router.get("/me/report")
+async def download_doctor_report(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
+    """PDF summary of vitals, lab results, medications, and questions for a doctor's visit."""
+    user = await get_current_user(token, db)
+    pdf = await build_doctor_report(db, user)
+    filename = f"sehat-summary-{datetime.utcnow():%Y-%m-%d}.pdf"
+    return Response(pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
 @router.delete("/me")
 async def delete_my_account(
@@ -92,7 +103,9 @@ async def update_user_profile(
     
     update_data = profile.model_dump(exclude_none=True)
     if "date_of_birth" in update_data:
-        update_data["date_of_birth"] = update_data["date_of_birth"].isoformat()
+        dob = update_data["date_of_birth"]
+        update_data["age"] = age_from_dob(dob)
+        update_data["date_of_birth"] = dob.isoformat()
     
     if update_data:
         await db.users.update_one({"_id": user["_id"]}, {"$set": update_data})
@@ -128,4 +141,4 @@ async def generate_telegram_link(token: str = Depends(oauth2_scheme), db=Depends
         except Exception as e:
             logging.warning(f"Could not get bot username: {e}")
     
-    return {"url": f"https://t.me/HealthSyncBot?start={link_token}", "expires": expires.isoformat()}
+    return {"url": f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}?start={link_token}", "expires": expires.isoformat()}

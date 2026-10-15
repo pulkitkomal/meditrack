@@ -1,8 +1,10 @@
-# HealthSync - Personal Health Records App
+# Sehat - Personal Health Records App
 
-A full-stack health records management application with Telegram bot integration for tracking blood glucose and blood pressure readings. AI-powered document analysis and insights to help you manage your health.
+*Sehat* (सेहत / صحت) means "health" in Hindi and Urdu.
 
-> **Created with [OpenCode](https://opencode.ai)** - An AI-powered coding assistant
+Sehat keeps your medical records and daily readings in one place and helps you understand them. Upload lab reports and prescriptions, log glucose, blood pressure and weight on the web or through Telegram, and ask the Health Assistant what your results mean.
+
+> **Created with [OpenCode](https://opencode.ai)** and developed further with the **[Cursor](https://cursor.com) AI coding agent**. See [Acknowledgements](#acknowledgements).
 
 ## Features
 
@@ -12,16 +14,20 @@ A full-stack health records management application with Telegram bot integration
 - Secure cloud storage with AWS S3
 - View and download original documents
 - Organize by category (lab reports, prescriptions, radiology, etc.)
-- **Carousel View**: Horizontal scrolling carousel with filter controls, view/analyze/delete actions
+- **One drop zone**: Drop or pick up to 20 files at once, choose a type and an optional record date
+- **Searchable records list**: Grouped by month, with type filters and analysis status; the analysis queue only appears while documents are being processed
 
 ### AI Analysis
 - Automatic extraction of lab values, medications, and diagnoses
 - Smart document summary generation
-- Medical advisor chatbot for health questions
+- **Health Assistant chat**: Answers from your dated lab results (with earlier values), medications, diagnoses, and the last 30 days of home readings in your glucose unit; streams replies, remembers the conversation, cites the records it used, and suggests questions based on what's flagged
+- **Safety first**: Messages describing an emergency (chest pain, stroke signs, very low or high glucose, a blood pressure crisis, self-harm) get an urgent-care reply straight away without calling the AI; the assistant never advises starting, stopping or changing medication
+- Saved conversations with history, delete, and feedback on answers; conversations are included in data export and account deletion
 - Health insights and trend analysis
 
 ### Health Dashboard
-- **Key Health Metrics Display**: Shows latest HbA1c, Hemoglobin, Glucose, Creatinine, TSH, and other important lab values
+- **Home shows what needs attention**: Out-of-range results, documents being analysed or failed, and a reminder when no reading has been logged today
+- **Insights**: Metric cards with sparklines for your conditions, latest lab values, lab trends, predictions, and questions for your doctor
 - **Sophisticated Health Score**: Multi-factor scoring based on specific lab values with different weights (e.g., HbA1c deducts more than cholesterol)
 - Trend analysis for lab values over time
 - User profile conditions factored into health score
@@ -39,25 +45,34 @@ A full-stack health records management application with Telegram bot integration
 - Mobile-first design with bottom navigation
 - Optimized tablet view (breakpoint at 1024px)
 - Desktop sidebar navigation for larger screens
-- Touch-friendly carousel with scroll indicators
 
 ### Profile Management
-- Personal health profile (age, gender, blood type)
-- Medical conditions and allergies tracking
-- Height and weight monitoring
+- Personal health profile (date of birth, gender, blood type); age is calculated from date of birth
+- Medical conditions and allergies entered as tags
+- Glucose unit, dry weight, and timezone preferences
+- Light, dark, or match-device appearance
 - Telegram connection management
-- API usage statistics
+- Daily Health Assistant allowance
+- Terms & Conditions and Privacy Policy
 
 ## Design
 
 The app features a premium, clean design inspired by Apple Health:
 
-- **Clean aesthetic**: White/slate background with teal accents
+- **Clean aesthetic**: White/slate background with teal accents, plus a dark theme
 - **Mobile-first**: Bottom navigation with responsive layouts
 - **Smooth animations**: Fade-in transitions, hover effects
 - **Premium components**: Rounded cards, soft shadows, modern typography
 
 ## Recent Updates
+
+- **New name**: HealthSync is now Sehat
+- **Better Health Assistant**: Home readings and dates in its context, conversation memory, streaming, saved conversations, clickable sources, emergency handling, and one shared chat panel for desktop and mobile
+- **UI refresh**: Dark mode, a needs-attention Home, sparkline metric cards, a single upload drop zone with a searchable month-grouped records list, tag inputs and new preferences in Settings, text labels on every coloured status, and loading placeholders instead of spinners
+
+- **Vitals on the website**: Add, edit, and delete glucose (mg/dL or mmol/L), blood pressure, and weight readings from the Vitals tab, not just Telegram
+- **Correct AI-extracted lab values**: Fix a misread value on any record; the AI's original is kept, and the health score, chat assistant, and report use the corrected value. A side-by-side view shows the original document next to the values on wide screens
+- **Doctor visit report**: Download a PDF with 30-day vitals, the last 12 months of lab results (out-of-range first, with previous values), medications, diagnoses, and questions to ask
 
 - **Semantic Search for Chatbot**: AI-powered medical advisor now uses sentence-transformers embeddings with cross-encoder reranking for highly relevant context retrieval
 - **Improved PDF Processing**: Added poppler-utils (pdftoppm/pdftotext) as primary PDF engine with pymupdf fallback for better compatibility
@@ -105,6 +120,8 @@ OPENAI_MODEL=gpt-4o-mini
 
 # Telegram Bot
 TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
+# Username of your bot, used for the "Connect Telegram" link
+TELEGRAM_BOT_USERNAME=HealthSyncBot
 USE_OPENAI_VISION=true
 
 # Comma-separated list of origins allowed to call the API from a browser
@@ -113,6 +130,8 @@ CORS_ORIGINS=http://localhost:6363
 COOKIE_SECURE=false
 # Per-user OpenAI token budget for the chat assistant over a rolling 24 hours
 DAILY_CHAT_TOKEN_LIMIT=100000
+# Optional: a different OpenAI model for the chat assistant (defaults to OPENAI_MODEL)
+OPENAI_CHAT_MODEL=
 
 # AWS S3 (optional)
 AWS_S3_BUCKET=your-bucket-name
@@ -195,7 +214,7 @@ Once connected, you can:
 ### Documents
 - `GET /api/documents/` - List documents
 - `POST /api/documents/upload` - Upload document
-- `POST /api/documents/bulk-upload` - Bulk upload
+- `POST /api/documents/bulk-upload` - Upload up to 20 files with one category and an optional `document_date`
 - `GET /api/documents/file/{doc_id}` - Get file
 - `DELETE /api/documents/{doc_id}` - Delete document
 
@@ -204,7 +223,15 @@ Once connected, you can:
 - `GET /api/analysis/{doc_id}` - Get analysis results
 - `GET /api/analysis/history` - Get analysis history
 - `GET /api/analysis/summary` - Get health summary
-- `POST /api/analysis/chat` - Chat with medical advisor
+- `POST /api/analysis/chat` - Chat without streaming (kept for API clients)
+
+### Health Assistant
+- `GET /api/chat/status` - Suggested questions and today's allowance
+- `POST /api/chat/messages` - Send a message (`message`, optional `conversation_id`); streams newline-delimited JSON events
+- `GET /api/chat/conversations` - List saved conversations
+- `GET /api/chat/conversations/{id}` - Read a conversation
+- `DELETE /api/chat/conversations/{id}` / `DELETE /api/chat/conversations` - Delete one or all
+- `POST /api/chat/conversations/{id}/messages/{index}/feedback` - Rate an answer (`up`, `down` or `null`)
 
 ### Telegram
 - `GET /api/telegram/config` - Get Telegram settings
@@ -228,6 +255,19 @@ Once connected, you can:
 - TLS/SSL encryption for data transmission
 - Encrypted storage on AWS S3
 - Secure API endpoints
+
+## Acknowledgements
+
+Sehat was first built with [OpenCode](https://opencode.ai). Much of its later development was done in pair-programming sessions with the **Cursor AI coding agent**, working inside this repository. The agent:
+
+- fixed security issues: cookie-based auth, upload validation, ownership checks, and rate limiting
+- built account controls: data export, account deletion, and session sign-out
+- added vitals logging on the web, corrections for AI-extracted lab values, and the doctor visit PDF report
+- made the UI refresh: dark mode, the needs-attention Home, the records list, and Settings
+- rebuilt the Health Assistant: grounded answers, streaming, saved conversations, and emergency safety checks
+- wrote the test suite
+
+Every change was reviewed and directed by the project owner.
 
 ## License
 

@@ -400,27 +400,11 @@ async def analyze_document(file_path, category: str, user_id: str, document_id: 
         "surgical_history": []
     }
     
-    # Add key facts
-    for lab in normalized_lab_values:
-        status = lab.get("status", "normal")
-        display_name = lab.get("display_name", lab.get("test", "Unknown"))
-        chatbot_context["key_facts"].append(f"{display_name}: {lab['value']} {lab.get('unit', '')} ({status})")
-    
-    for med in analysis_data.get("medications", []):
-        chatbot_context["key_facts"].append(f"Medication: {med.get('name')} {med.get('dosage', '')}")
-    
+    chatbot_context["key_facts"] = build_key_facts(normalized_lab_values, analysis_data.get("medications", []))
     logger.info(f"[ANALYSIS] Chatbot context built with {len(chatbot_context['key_facts'])} key facts")
     
-    # Risk assessment (simple rule-based)
-    risk_factors = []
+    risk_factors = build_risk_factors(normalized_lab_values)
     predicted_conditions = []
-    
-    for lab in normalized_lab_values:
-        display_name = lab.get("display_name", lab.get("test", "Unknown"))
-        if lab.get("status") == "high":
-            risk_factors.append(f"Elevated {display_name}")
-        elif lab.get("status") == "low":
-            risk_factors.append(f"Low {display_name}")
     
     logger.info(f"[ANALYSIS] Risk assessment complete - {len(risk_factors)} risk factors identified")
 
@@ -443,6 +427,27 @@ async def analyze_document(file_path, category: str, user_id: str, document_id: 
     
     logger.info(f"[ANALYSIS] Document analysis completed successfully for document: {document_id}")
     return result
+
+def build_key_facts(lab_values: list, medications: list) -> List[str]:
+    facts = []
+    for lab in lab_values:
+        display_name = lab.get("display_name", lab.get("test", "Unknown"))
+        facts.append(f"{display_name}: {lab.get('value')} {lab.get('unit', '')} ({lab.get('status', 'normal')})")
+    for med in medications:
+        facts.append(f"Medication: {med.get('name')} {med.get('dosage', '')}")
+    return facts
+
+def build_risk_factors(lab_values: list) -> List[str]:
+    risk_factors = []
+    for lab in lab_values:
+        display_name = lab.get("display_name", lab.get("test", "Unknown"))
+        if lab.get("status") == "critical":
+            risk_factors.append(f"Critical {display_name}")
+        elif lab.get("status") == "high":
+            risk_factors.append(f"Elevated {display_name}")
+        elif lab.get("status") == "low":
+            risk_factors.append(f"Low {display_name}")
+    return risk_factors
 
 async def save_analysis_result(db, analysis_data: dict) -> str:
     logger.info(f"[ANALYSIS] Saving analysis result to MongoDB - document_id: {analysis_data.get('document_id')}")
