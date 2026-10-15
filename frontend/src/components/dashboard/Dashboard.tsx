@@ -120,7 +120,7 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
                 </svg>
               </div>
               <div>
-                <h1 className="text-lg font-bold text-slate-800">HealthSync</h1>
+                <h1 className="text-lg font-bold text-slate-800">Sehat</h1>
                 <p className="text-xs text-slate-400">Personal Health</p>
               </div>
             </div>
@@ -181,7 +181,7 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                 </div>
-                <span className="font-bold text-slate-800">HealthSync</span>
+                <span className="font-bold text-slate-800">Sehat</span>
               </div>
               <button
                 onClick={() => handleTabChange("profile")}

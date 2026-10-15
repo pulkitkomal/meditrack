@@ -51,7 +51,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-slate-800">HealthSync</h1>
+          <h1 className="text-3xl font-bold text-slate-800">Sehat</h1>
           <p className="text-slate-500 mt-1">Personal Health Records</p>
         </div>
         
@@ -61,7 +61,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
             Create Account
           </h2>
           <p className="text-sm text-center text-slate-500 mb-6">
-            Join HealthSync today
+            Join Sehat today
           </p>
           
           <div className="grid grid-cols-2 gap-4 mb-4">

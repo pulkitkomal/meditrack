@@ -49,7 +49,7 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
-            <h2 className="text-4xl font-bold text-slate-800 mb-4">HealthSync</h2>
+            <h2 className="text-4xl font-bold text-slate-800 mb-4">Sehat</h2>
             <p className="text-lg text-slate-500 text-center max-w-md mb-6">Your personal health companion for managing medical records intelligently</p>
             <div className="flex gap-3">
               <div className="glass-surface-sm flex items-center gap-2 px-4 py-2">
@@ -79,7 +79,7 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-slate-800">HealthSync</h1>
+            <h1 className="text-3xl font-bold text-slate-800">Sehat</h1>
             <p className="text-slate-500 mt-1">Personal Health Records</p>
           </div>
           
@@ -144,7 +144,7 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
 
             {/* Footer */}
             <div className="mt-8 pt-6 border-t border-glass-border-subtle text-center">
-              <p className="text-sm text-slate-400">© {new Date().getFullYear()} HealthSync. All rights reserved.</p>
+              <p className="text-sm text-slate-400">© {new Date().getFullYear()} Sehat. All rights reserved.</p>
               <div className="flex justify-center gap-4 mt-2">
                 <button onClick={() => setLegal("terms")} className="text-sm text-slate-500 hover:text-teal-600">Terms & Conditions</button>
                 <span className="text-slate-200">|</span>

@@ -12,7 +12,7 @@ export const useReportDownload = () => {
     try {
       const res = await authService.downloadReport();
       const today = new Date().toLocaleDateString("en-CA");
-      saveBlob(res.data, `healthsync-summary-${today}.pdf`);
+      saveBlob(res.data, `sehat-summary-${today}.pdf`);
     } catch {
       setError("Could not create the report. Please try again.");
     } finally {

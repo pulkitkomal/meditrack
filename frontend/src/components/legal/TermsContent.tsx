@@ -4,12 +4,12 @@ const TermsContent = () => (
 
     <div>
       <h3 className="font-semibold text-slate-800 mb-2">1. Acceptance of Terms</h3>
-      <p>By accessing and using HealthSync, you agree to be bound by these Terms and Conditions. If you do not agree, please do not use the Service.</p>
+      <p>By accessing and using Sehat, you agree to be bound by these Terms and Conditions. If you do not agree, please do not use the Service.</p>
     </div>
 
     <div>
       <h3 className="font-semibold text-slate-800 mb-2">2. Description of Service</h3>
-      <p>HealthSync provides a platform for managing personal health records with:</p>
+      <p>Sehat provides a platform for managing personal health records with:</p>
       <ul className="list-disc list-inside mt-2 space-y-1">
         <li>Upload and storage of medical documents (PDF, JPG, PNG)</li>
         <li>AI-powered analysis of medical documents</li>
@@ -36,7 +36,7 @@ const TermsContent = () => (
 
     <div>
       <h3 className="font-semibold text-slate-800 mb-2">6. Limitation of Liability</h3>
-      <p>HealthSync is provided "as is" without warranties. We are not liable for any decisions made based on AI responses or outputs.</p>
+      <p>Sehat is provided "as is" without warranties. We are not liable for any decisions made based on AI responses or outputs.</p>
     </div>
   </div>
 );

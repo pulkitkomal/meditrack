@@ -20,7 +20,7 @@ const AccountPrivacyCard = () => {
     setMessage("");
     try {
       const res = await authService.exportData();
-      saveBlob(res.data, "healthsync-export.json");
+      saveBlob(res.data, "sehat-export.json");
     } catch {
       setMessage("Could not export your data. Please try again.");
     } finally {
@@ -35,7 +35,7 @@ const AccountPrivacyCard = () => {
   };
 
   const handleLogoutAll = async () => {
-    if (!window.confirm("Sign out of HealthSync on every device, including this one?")) return;
+    if (!window.confirm("Sign out of Sehat on every device, including this one?")) return;
     setBusy(true);
     try {
       await authService.logoutAll();
@@ -110,7 +110,7 @@ const AccountPrivacyCard = () => {
         <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           <button type="button" onClick={() => setLegal("terms")} className="text-slate-500 hover:text-teal-600">Terms & Conditions</button>
           <button type="button" onClick={() => setLegal("privacy")} className="text-slate-500 hover:text-teal-600">Privacy Policy</button>
-          <span className="text-slate-400">© {new Date().getFullYear()} HealthSync</span>
+          <span className="text-slate-400">© {new Date().getFullYear()} Sehat</span>
         </div>
       </div>
       {legal && <LegalModal document={legal} onClose={() => setLegal(null)} />}

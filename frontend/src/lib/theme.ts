@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 
 export type ThemePreference = "system" | "light" | "dark";
 
-const STORAGE_KEY = "healthsync-theme";
+const STORAGE_KEY = "sehat-theme";
 const listeners = new Set<() => void>();
 const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
 

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
     TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_BOT_USERNAME: str = "HealthSyncBot"
     USE_OPENAI_VISION: bool = True
     CORS_ORIGINS: str = "http://localhost:6363"
     # Set to true when the app is served over HTTPS so the auth cookie is never sent over plain HTTP

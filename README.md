@@ -1,8 +1,10 @@
-# HealthSync - Personal Health Records App
+# Sehat - Personal Health Records App
 
-A full-stack health records management application with Telegram bot integration for tracking blood glucose and blood pressure readings. AI-powered document analysis and insights to help you manage your health.
+*Sehat* (सेहत / صحت) means "health" in Hindi and Urdu.
 
-> **Created with [OpenCode](https://opencode.ai)** - An AI-powered coding assistant
+Sehat keeps your medical records and daily readings in one place and helps you understand them. Upload lab reports and prescriptions, log glucose, blood pressure and weight on the web or through Telegram, and ask the Health Assistant what your results mean.
+
+> **Created with [OpenCode](https://opencode.ai)** and developed further with the **[Cursor](https://cursor.com) AI coding agent**. See [Acknowledgements](#acknowledgements).
 
 ## Features
 
@@ -64,6 +66,7 @@ The app features a premium, clean design inspired by Apple Health:
 
 ## Recent Updates
 
+- **New name**: HealthSync is now Sehat
 - **Better Health Assistant**: Home readings and dates in its context, conversation memory, streaming, saved conversations, clickable sources, emergency handling, and one shared chat panel for desktop and mobile
 - **UI refresh**: Dark mode, a needs-attention Home, sparkline metric cards, a single upload drop zone with a searchable month-grouped records list, tag inputs and new preferences in Settings, text labels on every coloured status, and loading placeholders instead of spinners
 
@@ -117,6 +120,8 @@ OPENAI_MODEL=gpt-4o-mini
 
 # Telegram Bot
 TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
+# Username of your bot, used for the "Connect Telegram" link
+TELEGRAM_BOT_USERNAME=HealthSyncBot
 USE_OPENAI_VISION=true
 
 # Comma-separated list of origins allowed to call the API from a browser
@@ -250,6 +255,19 @@ Once connected, you can:
 - TLS/SSL encryption for data transmission
 - Encrypted storage on AWS S3
 - Secure API endpoints
+
+## Acknowledgements
+
+Sehat was first built with [OpenCode](https://opencode.ai). Much of its later development was done in pair-programming sessions with the **Cursor AI coding agent**, working inside this repository. The agent:
+
+- fixed security issues: cookie-based auth, upload validation, ownership checks, and rate limiting
+- built account controls: data export, account deletion, and session sign-out
+- added vitals logging on the web, corrections for AI-extracted lab values, and the doctor visit PDF report
+- made the UI refresh: dark mode, the needs-attention Home, the records list, and Settings
+- rebuilt the Health Assistant: grounded answers, streaming, saved conversations, and emergency safety checks
+- wrote the test suite
+
+Every change was reviewed and directed by the project owner.
 
 ## License
 

@@ -8,7 +8,7 @@ import {
 } from "../../services/api";
 import { parseRecordDate, parseTimestamp } from "../../lib/dates";
 
-const STORAGE_KEY = "healthsync-chat-conversation";
+const STORAGE_KEY = "sehat-chat-conversation";
 
 interface LocalMessage extends ChatMessage {
   pending?: boolean;

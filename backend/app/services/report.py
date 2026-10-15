@@ -208,7 +208,7 @@ def build_report_html(data: dict) -> str:
 
     parts = [
         f"<h1>Health summary: {name}</h1>",
-        f'<p class="muted">{" &#183; ".join(details)}{" &#183; " if details else ""}Generated {today.strftime("%d %b %Y")} by HealthSync</p>',
+        f'<p class="muted">{" &#183; ".join(details)}{" &#183; " if details else ""}Generated {today.strftime("%d %b %Y")} by Sehat</p>',
         f"<p><b>Known conditions:</b> {conditions}</p>",
         f"<p><b>Allergies:</b> {allergies}</p>",
         "<h2>Vitals (last 30 days)</h2>", _vitals_html(data["vitals"]),
@@ -262,7 +262,7 @@ def render_pdf(html: str) -> bytes:
 
     doc = pymupdf.open("pdf", buffer.getvalue())
     for number, pdf_page in enumerate(doc, start=1):
-        pdf_page.insert_text((36, page.height - 24), f"HealthSync health summary - page {number} of {doc.page_count}",
+        pdf_page.insert_text((36, page.height - 24), f"Sehat health summary - page {number} of {doc.page_count}",
                              fontsize=7, color=(0.4, 0.45, 0.55))
     return doc.tobytes(garbage=3, deflate=True)
 

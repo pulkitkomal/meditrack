@@ -60,7 +60,7 @@ async def export_my_data(token: str = Depends(oauth2_scheme), db=Depends(get_db)
     logger.info(f"[USER] Exported data for user {user['_id']}")
     return JSONResponse(
         jsonable_encoder(data, custom_encoder={ObjectId: str}),
-        headers={"Content-Disposition": 'attachment; filename="healthsync-export.json"'},
+        headers={"Content-Disposition": 'attachment; filename="sehat-export.json"'},
     )
 
 @router.get("/me/report")
@@ -68,7 +68,7 @@ async def download_doctor_report(token: str = Depends(oauth2_scheme), db=Depends
     """PDF summary of vitals, lab results, medications, and questions for a doctor's visit."""
     user = await get_current_user(token, db)
     pdf = await build_doctor_report(db, user)
-    filename = f"healthsync-summary-{datetime.utcnow():%Y-%m-%d}.pdf"
+    filename = f"sehat-summary-{datetime.utcnow():%Y-%m-%d}.pdf"
     return Response(pdf, media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
@@ -141,4 +141,4 @@ async def generate_telegram_link(token: str = Depends(oauth2_scheme), db=Depends
         except Exception as e:
             logging.warning(f"Could not get bot username: {e}")
     
-    return {"url": f"https://t.me/HealthSyncBot?start={link_token}", "expires": expires.isoformat()}
+    return {"url": f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}?start={link_token}", "expires": expires.isoformat()}
