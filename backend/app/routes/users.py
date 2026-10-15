@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Body, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from app.utils.age import age_from_dob, user_age
 from app.models import ProfileUpdate
 from app.oauth2 import oauth2_scheme, AUTH_COOKIE_NAME
 from app.config import settings
@@ -34,7 +35,7 @@ def serialize_user(user: dict) -> dict:
         "last_name": user["last_name"],
         "role": user.get("role", "user"),
         "gender": user.get("gender"),
-        "age": user.get("age"),
+        "age": user_age(user),
         "date_of_birth": user.get("date_of_birth"),
         "blood_type": user.get("blood_type"),
         "height": user.get("height"),
@@ -102,7 +103,9 @@ async def update_user_profile(
     
     update_data = profile.model_dump(exclude_none=True)
     if "date_of_birth" in update_data:
-        update_data["date_of_birth"] = update_data["date_of_birth"].isoformat()
+        dob = update_data["date_of_birth"]
+        update_data["age"] = age_from_dob(dob)
+        update_data["date_of_birth"] = dob.isoformat()
     
     if update_data:
         await db.users.update_one({"_id": user["_id"]}, {"$set": update_data})

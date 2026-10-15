@@ -90,7 +90,7 @@ const ReadingFormModal = ({ reading, defaultType = "glucose", glucoseUnit = "mg/
               disabled={editing && type !== option.id}
               onClick={() => setType(option.id)}
               className={`py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 ${
-                type === option.id ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                type === option.id ? "bg-surface text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
               {option.label}

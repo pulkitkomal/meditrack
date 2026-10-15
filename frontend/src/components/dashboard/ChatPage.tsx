@@ -126,9 +126,9 @@ const ChatPage = ({ userConditions = [], onBack }: ChatPageProps) => {
   const isFirstBotMessage = messages.filter(m => m.role === "bot").length <= 1;
 
   return (
-    <div className="flex flex-col h-full bg-[#f2f2f7]">
+    <div className="flex flex-col h-full bg-slate-50">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-4 bg-white border-b border-slate-100">
+      <div className="flex items-center gap-3 px-4 py-4 bg-surface border-b border-slate-100">
         <button onClick={() => (onBack ? onBack() : navigate(-1))} className="p-2 hover:bg-slate-50 rounded-glass" aria-label="Back">
           <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -221,7 +221,7 @@ const ChatPage = ({ userConditions = [], onBack }: ChatPageProps) => {
       )}
 
       {/* Input */}
-      <div className="p-4 border-t border-slate-100 bg-white">
+      <div className="p-4 border-t border-slate-100 bg-surface">
         <div className="flex gap-3">
           <input
             type="text"

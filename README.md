@@ -12,7 +12,8 @@ A full-stack health records management application with Telegram bot integration
 - Secure cloud storage with AWS S3
 - View and download original documents
 - Organize by category (lab reports, prescriptions, radiology, etc.)
-- **Carousel View**: Horizontal scrolling carousel with filter controls, view/analyze/delete actions
+- **One drop zone**: Drop or pick up to 20 files at once, choose a type and an optional record date
+- **Searchable records list**: Grouped by month, with type filters and analysis status; the analysis queue only appears while documents are being processed
 
 ### AI Analysis
 - Automatic extraction of lab values, medications, and diagnoses
@@ -21,7 +22,8 @@ A full-stack health records management application with Telegram bot integration
 - Health insights and trend analysis
 
 ### Health Dashboard
-- **Key Health Metrics Display**: Shows latest HbA1c, Hemoglobin, Glucose, Creatinine, TSH, and other important lab values
+- **Home shows what needs attention**: Out-of-range results, documents being analysed or failed, and a reminder when no reading has been logged today
+- **Insights**: Metric cards with sparklines for your conditions, latest lab values, lab trends, predictions, and questions for your doctor
 - **Sophisticated Health Score**: Multi-factor scoring based on specific lab values with different weights (e.g., HbA1c deducts more than cholesterol)
 - Trend analysis for lab values over time
 - User profile conditions factored into health score
@@ -39,25 +41,28 @@ A full-stack health records management application with Telegram bot integration
 - Mobile-first design with bottom navigation
 - Optimized tablet view (breakpoint at 1024px)
 - Desktop sidebar navigation for larger screens
-- Touch-friendly carousel with scroll indicators
 
 ### Profile Management
-- Personal health profile (age, gender, blood type)
-- Medical conditions and allergies tracking
-- Height and weight monitoring
+- Personal health profile (date of birth, gender, blood type); age is calculated from date of birth
+- Medical conditions and allergies entered as tags
+- Glucose unit, dry weight, and timezone preferences
+- Light, dark, or match-device appearance
 - Telegram connection management
-- API usage statistics
+- Daily Health Assistant allowance
+- Terms & Conditions and Privacy Policy
 
 ## Design
 
 The app features a premium, clean design inspired by Apple Health:
 
-- **Clean aesthetic**: White/slate background with teal accents
+- **Clean aesthetic**: White/slate background with teal accents, plus a dark theme
 - **Mobile-first**: Bottom navigation with responsive layouts
 - **Smooth animations**: Fade-in transitions, hover effects
 - **Premium components**: Rounded cards, soft shadows, modern typography
 
 ## Recent Updates
+
+- **UI refresh**: Dark mode, a needs-attention Home, sparkline metric cards, a single upload drop zone with a searchable month-grouped records list, tag inputs and new preferences in Settings, text labels on every coloured status, and loading placeholders instead of spinners
 
 - **Vitals on the website**: Add, edit, and delete glucose (mg/dL or mmol/L), blood pressure, and weight readings from the Vitals tab, not just Telegram
 - **Correct AI-extracted lab values**: Fix a misread value on any record; the AI's original is kept, and the health score, chat assistant, and report use the corrected value. A side-by-side view shows the original document next to the values on wide screens
@@ -199,7 +204,7 @@ Once connected, you can:
 ### Documents
 - `GET /api/documents/` - List documents
 - `POST /api/documents/upload` - Upload document
-- `POST /api/documents/bulk-upload` - Bulk upload
+- `POST /api/documents/bulk-upload` - Upload up to 20 files with one category and an optional `document_date`
 - `GET /api/documents/file/{doc_id}` - Get file
 - `DELETE /api/documents/{doc_id}` - Delete document
 

@@ -2,6 +2,7 @@ import logging
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Body
 from bson import ObjectId
 from pathlib import Path
+from app.utils.age import user_age
 from app.models import LabValueUpdate
 from app.oauth2 import oauth2_scheme
 from app.utils.security import get_current_user
@@ -31,6 +32,11 @@ async def get_usage_stats(token: str = Depends(oauth2_scheme), db=Depends(get_db
     user = await get_current_user(token, db)
     logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}")
     result = await get_user_usage(db, str(user["_id"]))
+    since = datetime.utcnow() - timedelta(days=1)
+    result["chat_today"] = {
+        "used": await get_tokens_used_since(db, str(user["_id"]), since, category="chat"),
+        "limit": settings.DAILY_CHAT_TOKEN_LIMIT,
+    }
     logger.info(f"[ANALYSIS-ROUTE] Usage stats returned")
     return result
 
@@ -160,6 +166,7 @@ async def get_history(category: str = None, token: str = Depends(oauth2_scheme),
             analysis["document_date"] = doc["document_date"]
         else:
             analysis["document_date"] = analysis.get("analysis_date")
+        analysis["title"] = (doc.get("predicted_title") or doc.get("original_name")) if doc else None
     
     # Sort by document_date
     analyses.sort(key=lambda x: x.get("document_date", x.get("analysis_date", "")), reverse=True)
@@ -193,8 +200,8 @@ async def get_summary(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     logger.info(f"[ANALYSIS-ROUTE] Key metrics extracted: {len(latest_metrics)} items")
     
     profile_info = {}
-    if user.get("age"):
-        profile_info["age"] = user["age"]
+    if user_age(user):
+        profile_info["age"] = user_age(user)
     if user.get("gender"):
         profile_info["gender"] = user["gender"]
     if user.get("blood_type"):
@@ -223,7 +230,7 @@ async def get_doctor_questions(token: str = Depends(oauth2_scheme), db=Depends(g
     logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}")
     
     user_profile = {
-        "age": user.get("age"),
+        "age": user_age(user),
         "gender": user.get("gender"),
         "blood_type": user.get("blood_type"),
         "medical_conditions": user.get("medical_conditions", []),
@@ -279,6 +286,7 @@ async def get_analysis(doc_id: str, token: str = Depends(oauth2_scheme), db=Depe
         analysis["document_date"] = doc["document_date"]
     else:
         analysis["document_date"] = analysis.get("analysis_date")
+    analysis["title"] = doc.get("predicted_title") or doc.get("original_name")
     
     logger.info(f"[ANALYSIS-ROUTE] Analysis found - category: {analysis.get('category')}, date: {analysis.get('document_date')}")
     logger.info(f"[ANALYSIS-ROUTE] Returning analysis with keys: {list(analysis.keys())}")

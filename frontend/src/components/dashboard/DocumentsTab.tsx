@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { documentService, analysisService } from "../../services/api";
-import FileUpload, { BulkUpload } from "./FileUpload";
+import UploadPanel, { CATEGORY_LABELS } from "./FileUpload";
 import { TaskQueueStatus } from "./TaskQueueStatus";
+import { PageSkeleton } from "../ui/Skeleton";
+import { parseRecordDate } from "../../lib/dates";
 import type { Document } from "../../types";
 
 interface DocWithAnalysis extends Document {
@@ -10,257 +12,178 @@ interface DocWithAnalysis extends Document {
   predicted_title?: string;
 }
 
-const categories = [
-  { value: "", label: "All" },
-  { value: "lab_results", label: "Lab Results" },
-  { value: "prescriptions", label: "Prescriptions" },
-  { value: "imaging", label: "Imaging" },
-  { value: "vaccination_records", label: "Vaccinations" },
-  { value: "discharge_summaries", label: "Discharge" },
-  { value: "insurance_documents", label: "Insurance" }
-];
+const FILTERS = [{ value: "", label: "All" }, ...Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))];
+
+const displayTitle = (doc: DocWithAnalysis) => doc.predicted_title || doc.original_name;
 
 const DocumentsTab = () => {
   const [docs, setDocs] = useState<DocWithAnalysis[]>([]);
   const [filter, setFilter] = useState("");
-  const [dateRange, setDateRange] = useState("");
-  const [uploadRange] = useState("");
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [queued, setQueued] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const carouselRef = React.useRef<HTMLDivElement>(null);
 
   const analysisId = searchParams.get("analysis");
   useEffect(() => {
-    if (analysisId) {
-      navigate(`/analysis/${analysisId}`);
-    }
+    if (analysisId) navigate(`/analysis/${analysisId}`);
   }, [analysisId, navigate]);
 
-  const fetchDocs = async (resetFilters = false) => {
+  const fetchDocs = useCallback(async () => {
     try {
-      const params: any = {};
-      
-      if (!resetFilters) {
-        if (filter) params.category = filter;
-        if (dateRange) {
-          const [from, to] = dateRange.split("|");
-          if (from) params.date_from = from;
-          if (to) params.date_to = to;
-        }
-        if (uploadRange) {
-          const [from, to] = uploadRange.split("|");
-          if (from) params.upload_from = from;
-          if (to) params.upload_to = to;
-        }
-      }
-      
-      const res = await documentService.list(params);
+      const res = await documentService.list();
       setDocs(res.data);
     } catch (error) {
       console.error("Failed to fetch documents:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchDocs();
-  }, [filter, dateRange, uploadRange]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      try {
-        analysisService.processQueue(5).then(() => setRefreshTrigger(r => r + 1));
-      } catch (e) {}
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [fetchDocs]);
 
   const handleAnalyze = async (docId: string) => {
     try {
       await analysisService.triggerAnalysis(docId);
       setRefreshTrigger(r => r + 1);
-      setTimeout(() => fetchDocs(), 2000);
     } catch (error) {
       console.error("Analysis failed:", error);
     }
   };
 
-  const handleDelete = async (docId: string) => {
-    if (!confirm("Delete this document and its analysis?")) return;
+  const handleDelete = async (doc: DocWithAnalysis) => {
+    if (!confirm(`Delete "${displayTitle(doc)}" and its analysis?`)) return;
     try {
-      await analysisService.deleteAnalysis(docId);
+      await analysisService.deleteAnalysis(doc.id);
       fetchDocs();
     } catch (error) {
       console.error("Delete failed:", error);
     }
   };
 
-  const scrollCarousel = (direction: 'left' | 'right') => {
-    if (carouselRef.current) {
-      const scrollAmount = 300;
-      carouselRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
-    }
-  };
+  const titles = useMemo(() => Object.fromEntries(docs.map(d => [d.id, displayTitle(d)])), [docs]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
+  const groups = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const visible = docs.filter(d =>
+      (!filter || d.category === filter) &&
+      (!q || `${displayTitle(d)} ${d.original_name} ${CATEGORY_LABELS[d.category] || ""}`.toLowerCase().includes(q))
     );
-  }
+    const byMonth = new Map<string, DocWithAnalysis[]>();
+    for (const doc of visible) {
+      const date = parseRecordDate(doc.document_date) || parseRecordDate(doc.upload_date);
+      const key = date ? date.toLocaleDateString(undefined, { month: "long", year: "numeric" }) : "Undated";
+      byMonth.set(key, [...(byMonth.get(key) || []), doc]);
+    }
+    return Array.from(byMonth.entries());
+  }, [docs, filter, query]);
+
+  if (loading) return <PageSkeleton cards={3} />;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Documents Carousel */}
-      {docs.length > 0 && (
-        <div className="card-premium">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-slate-800">Your Documents ({docs.length})</h3>
-          </div>
-          
-          {/* Filters in Carousel */}
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
-              {categories.map((cat) => (
-                <button
-                  key={cat.value}
-                  onClick={() => setFilter(cat.value)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                    filter === cat.value
-                      ? "bg-teal-600 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="px-2 py-1.5 text-xs border border-glass-border-subtle rounded-lg bg-white text-slate-600"
+    <div className="space-y-4 max-w-4xl mx-auto">
+      <TaskQueueStatus refreshTrigger={refreshTrigger} titles={titles} onComplete={fetchDocs} onActiveChange={setQueued} />
+
+      <UploadPanel onUpload={() => { fetchDocs(); setRefreshTrigger(r => r + 1); }} />
+
+      <div className="card-premium">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+          <h3 className="font-semibold text-slate-800 shrink-0">Your records <span className="text-slate-400 font-normal">({docs.length})</span></h3>
+          <label className="relative flex-1">
+            <span className="sr-only">Search records</span>
+            <svg className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+            </svg>
+            <input
+              type="search"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search by title or type"
+              className="input-premium !pl-9"
+            />
+          </label>
+        </div>
+
+        <div className="flex gap-1.5 overflow-x-auto pb-1 mb-4 scrollbar-hide" role="group" aria-label="Filter by type">
+          {FILTERS.map(cat => (
+            <button
+              key={cat.value}
+              type="button"
+              aria-pressed={filter === cat.value}
+              onClick={() => setFilter(cat.value)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                filter === cat.value ? "bg-teal-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
             >
-              <option value="">All Dates</option>
-              <option value={`${new Date().toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>Today</option>
-              <option value={`${new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>7 Days</option>
-              <option value={`${new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0]}|${new Date().toISOString().split('T')[0]}`}>30 Days</option>
-            </select>
-          </div>
-          
-          {/* Documents in Carousel */}
-          <div className="relative">
-            {/* Left Arrow - Desktop Only */}
-            <button 
-              onClick={() => scrollCarousel('left')}
-              className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-glass-border-subtle rounded-full items-center justify-center shadow-md hover:bg-slate-50"
-            >
-              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              {cat.label}
             </button>
-            
-            <div ref={carouselRef} className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide px-8">
-              {docs.map((doc) => (
-              <div 
-                key={doc.id} 
-                className="flex-shrink-0 w-56 p-4 bg-glass-tint rounded-glass border border-slate-100"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  {doc.analysis_id ? (
-                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">Analyzed</span>
-                  ) : (
-                    <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs">Pending</span>
-                  )}
-                  <span className="text-xs text-slate-400 capitalize">{doc.category.replace('_', ' ')}</span>
-                </div>
-                <p className="text-sm font-medium text-slate-800 truncate mb-1">
-                  {doc.predicted_title || doc.original_name}
-                </p>
-                <p className="text-xs text-slate-500 mb-3">
-                  {doc.document_date ? new Date(doc.document_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
-                </p>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => navigate(`/analysis/${doc.id}`)}
-                    className="flex-1 px-2 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-medium hover:bg-teal-700"
-                  >
-                    View
-                  </button>
-                  {!doc.analysis_id && (
-                    <button 
-                      onClick={() => handleAnalyze(doc.id)}
-                      className="flex-1 px-2 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700"
-                    >
-                      Analyze
-                    </button>
-                  )}
-                  <button 
-                    onClick={() => handleDelete(doc.id)}
-                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+          ))}
+        </div>
+
+        {docs.length === 0 ? (
+          <p className="text-center text-sm text-slate-500 py-8">No records yet. Add your first one above.</p>
+        ) : groups.length === 0 ? (
+          <p className="text-center text-sm text-slate-500 py-8">No records match your search.</p>
+        ) : (
+          <div className="space-y-5">
+            {groups.map(([month, items]) => (
+              <section key={month}>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">{month}</h4>
+                <ul className="divide-y divide-slate-100 rounded-xl border border-slate-100 overflow-hidden">
+                  {items.map(doc => {
+                    const date = parseRecordDate(doc.document_date);
+                    return (
+                      <li key={doc.id} className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/analysis/${doc.id}`)}
+                          className="flex-1 min-w-0 text-left"
+                        >
+                          <p className="text-sm font-medium text-slate-800 line-clamp-2">{displayTitle(doc)}</p>
+                          <p className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-2">
+                            <span>{CATEGORY_LABELS[doc.category] || doc.category}</span>
+                            {date && <span>· {date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}</span>}
+                            {doc.analysis_id ? (
+                              <span className="text-emerald-700">· ✓ Analysed</span>
+                            ) : queued.has(doc.id) ? (
+                              <span className="text-teal-700">· ◷ Analysing…</span>
+                            ) : (
+                              <span className="text-amber-700">· ◷ Not analysed yet</span>
+                            )}
+                          </p>
+                        </button>
+                        {!doc.analysis_id && !queued.has(doc.id) && (
+                          <button
+                            type="button"
+                            onClick={() => handleAnalyze(doc.id)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-teal-50 text-teal-700 hover:bg-teal-100 shrink-0"
+                          >
+                            Analyse
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(doc)}
+                          className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 shrink-0"
+                          aria-label={`Delete ${displayTitle(doc)}`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
             ))}
-            </div>
-            
-            {/* Right Arrow - Desktop Only */}
-            <button 
-              onClick={() => scrollCarousel('right')}
-              className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-glass-border-subtle rounded-full items-center justify-center shadow-md hover:bg-slate-50"
-            >
-              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
           </div>
-        </div>
-      )}
-
-      {/* Upload Section */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="card-premium">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-semibold text-slate-800">Single Upload</h3>
-              <p className="text-sm text-slate-500">Add one document at a time</p>
-            </div>
-          </div>
-          <FileUpload onUpload={() => { fetchDocs(true); setRefreshTrigger(r => r + 1); }} />
-        </div>
-        <div className="card-premium">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-semibold text-slate-800">Bulk Upload</h3>
-              <p className="text-sm text-slate-500">Upload multiple files at once</p>
-            </div>
-          </div>
-          <BulkUpload onUpload={() => { fetchDocs(true); setRefreshTrigger(r => r + 1); }} />
-        </div>
+        )}
       </div>
-
-      {/* Analysis Queue Status */}
-      <TaskQueueStatus refreshTrigger={refreshTrigger} />
     </div>
   );
 };

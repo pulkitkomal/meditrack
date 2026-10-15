@@ -2,12 +2,14 @@ import { useState } from "react";
 import { authService } from "../../services/api";
 import { Button } from "../ui/button";
 import { saveBlob } from "../../lib/download";
+import LegalModal, { type LegalDocument } from "../legal/LegalModal";
 
 const AccountPrivacyCard = () => {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [password, setPassword] = useState("");
+  const [legal, setLegal] = useState<LegalDocument | null>(null);
 
   const goToLogin = () => {
     window.location.href = "/login";
@@ -81,7 +83,7 @@ const AccountPrivacyCard = () => {
             Delete account
           </Button>
         ) : (
-          <div className="p-4 rounded-xl bg-red-50/80 space-y-3">
+          <div className="p-4 rounded-xl bg-red-50 space-y-3">
             <p className="text-sm text-red-700">
               This permanently deletes your account, all uploaded documents, analyses, and health readings. It cannot be undone.
             </p>
@@ -90,7 +92,7 @@ const AccountPrivacyCard = () => {
               placeholder="Enter your password to confirm"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-red-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+              className="w-full px-4 py-2.5 rounded-xl border border-red-200 bg-surface text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500/20"
             />
             <div className="flex gap-3">
               <Button onClick={handleDelete} disabled={busy || !password} className="bg-red-600 hover:bg-red-700 text-white">
@@ -104,7 +106,14 @@ const AccountPrivacyCard = () => {
         )}
 
         {message && <p className="text-sm text-red-500">{message}</p>}
+
+        <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <button type="button" onClick={() => setLegal("terms")} className="text-slate-500 hover:text-teal-600">Terms & Conditions</button>
+          <button type="button" onClick={() => setLegal("privacy")} className="text-slate-500 hover:text-teal-600">Privacy Policy</button>
+          <span className="text-slate-400">© {new Date().getFullYear()} HealthSync</span>
+        </div>
       </div>
+      {legal && <LegalModal document={legal} onClose={() => setLegal(null)} />}
     </div>
   );
 };

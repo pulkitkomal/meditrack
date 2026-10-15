@@ -1,8 +1,8 @@
+import { PageSkeleton } from "../ui/Skeleton";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { authService } from "../../services/api";
 import type { User } from "../../types";
-import LegalModal, { type LegalDocument } from "../legal/LegalModal";
 import { useReportDownload } from "./useReportDownload";
 
 const OverviewTab = lazy(() => import("./OverviewTab"));
@@ -31,7 +31,6 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [legal, setLegal] = useState<LegalDocument | null>(null);
   const report = useReportDownload();
   const navigate = useNavigate();
 
@@ -89,7 +88,7 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
       case "documents":
         return <DocumentsTab />;
       case "insights":
-        return <InsightsTab userConditions={user.medical_conditions || []} />;
+        return <InsightsTab userConditions={user.medical_conditions || []} glucoseUnit={user.glucose_unit} onNavigate={handleTabChange} />;
       case "chat":
         return isMobile ? <ChatPage userConditions={user.medical_conditions || []} /> : null;
       default:
@@ -101,14 +100,14 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
 
   if (activeTab === "chat" && isMobile) {
     return (
-      <div className="h-screen flex flex-col bg-[#f2f2f7]">
+      <div className="h-screen flex flex-col bg-slate-50">
         <ChatPage userConditions={user.medical_conditions || []} onBack={() => handleTabChange("overview")} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f2f2f7] flex w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 flex w-full max-w-full overflow-x-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col fixed h-screen left-0 top-0 z-40">
         <div className="glass-surface-xl rounded-none rounded-r-glass-xl border-l-0 border-glass-border my-2 ml-2 h-[calc(100vh-16px)] w-64 flex flex-col">
@@ -235,24 +234,13 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 w-full overflow-auto pb-20 md:pb-8">
+        <main className="flex-1 w-full overflow-auto pb-[calc(6rem+env(safe-area-inset-bottom))] scroll-pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-8 md:scroll-pb-0">
           <div className="animate-fade-in w-full px-3 md:px-6 py-4 md:py-6">
-            <Suspense fallback={<div className="skeleton h-40 rounded-xl" />}>
+            <Suspense fallback={<PageSkeleton cards={2} />}>
               {renderTabContent()}
             </Suspense>
           </div>
           
-          {/* Footer */}
-          <div className="px-6 py-6 text-center">
-            <div className="glass-surface-sm inline-block px-6 py-4 mx-auto">
-              <p className="text-sm text-slate-400">© {new Date().getFullYear()} HealthSync. All rights reserved.</p>
-              <div className="flex justify-center gap-4 mt-3">
-                <button onClick={() => setLegal("terms")} className="text-sm text-slate-500 hover:text-teal-600 transition-colors">Terms & Conditions</button>
-                <span className="text-slate-200">|</span>
-                <button onClick={() => setLegal("privacy")} className="text-sm text-slate-500 hover:text-teal-600 transition-colors">Privacy Policy</button>
-              </div>
-            </div>
-          </div>
         </main>
       </div>
 
@@ -262,7 +250,6 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
       {/* Chat Widget - Desktop only */}
       {!isMobile && <ChatWidget isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} userConditions={user.medical_conditions || []} />}
 
-      {legal && <LegalModal document={legal} onClose={() => setLegal(null)} />}
     </div>
   );
 };

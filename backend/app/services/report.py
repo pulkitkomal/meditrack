@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pymupdf
 
+from app.utils.age import user_age
 from app.services.analysis import get_user_analyses
 from app.services.chatbot import generate_doctor_questions
 
@@ -125,7 +126,7 @@ async def collect_report_data(db, user: dict) -> dict:
     )[:15]
 
     questions = await generate_doctor_questions(db, user_id, {
-        "age": user.get("age"),
+        "age": user_age(user),
         "gender": user.get("gender"),
         "medical_conditions": user.get("medical_conditions", []),
     })

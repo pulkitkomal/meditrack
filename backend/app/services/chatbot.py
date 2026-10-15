@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from app.utils.age import user_age
 from app.config import settings
 from app.services.analysis import client, get_user_analyses, get_user_chunks
 
@@ -191,8 +192,8 @@ async def chat_with_medical_advisor(db, user_id: str, message: str) -> dict:
     profile_info = ""
     if user:
         profile_parts = []
-        if user.get("age"):
-            profile_parts.append(f"Age: {user['age']}")
+        if user_age(user):
+            profile_parts.append(f"Age: {user_age(user)}")
         if user.get("gender"):
             profile_parts.append(f"Gender: {user['gender']}")
         if user.get("blood_type"):

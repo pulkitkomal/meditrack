@@ -33,11 +33,11 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#f2f2f7]">
+    <div className="min-h-screen flex bg-slate-50">
       {legal && <LegalModal document={legal} onClose={() => setLegal(null)} />}
 
       {/* Left Side - Liquid Glass Hero */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-teal-50 to-[#f2f2f7]">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-teal-50 to-slate-50">
         <div className="absolute top-20 left-20 w-64 h-64 bg-teal-200/30 rounded-full blur-3xl"></div>
         <div className="absolute bottom-32 right-16 w-80 h-80 bg-teal-100/20 rounded-full blur-3xl"></div>
         <div className="absolute top-1/3 right-1/4 w-40 h-40 bg-teal-300/10 rounded-full blur-2xl"></div>
@@ -92,11 +92,13 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
             
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="relative">
-                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 011-.908 6 6 0 011.908 0" />
                 </svg>
                 <input 
                   placeholder="Email address" 
+                  aria-label="Email address"
+                  autoComplete="email"
                   type="email" 
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
@@ -105,11 +107,13 @@ const LoginForm = ({ setUser }: LoginFormProps) => {
                 />
               </div>
               <div className="relative">
-                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 <input 
                   placeholder="Password" 
+                  aria-label="Password"
+                  autoComplete="current-password"
                   type="password" 
                   value={password} 
                   onChange={e => setPassword(e.target.value)} 

@@ -16,7 +16,7 @@ export interface LabValue {
 const STATUS_STYLES: Record<string, { label: string; className: string; icon: string }> = {
   critical: { label: "Critical", className: "bg-red-200 text-red-800 border border-red-300", icon: "M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" },
   high: { label: "High", className: "bg-red-100 text-red-700 border border-red-200", icon: "M5 15l7-7 7 7" },
-  low: { label: "Low", className: "bg-blue-100 text-blue-700 border border-blue-200", icon: "M19 9l-7 7-7-7" },
+  low: { label: "Low", className: "bg-amber-100 text-amber-800 border border-amber-200", icon: "M19 9l-7 7-7-7" },
   normal: { label: "Normal", className: "bg-emerald-100 text-emerald-700 border border-emerald-200", icon: "M5 13l4 4L19 7" },
 };
 
@@ -66,7 +66,7 @@ const EditRow = ({ docId, index, lab, onSaved, onCancel }: { docId: string; inde
     }
   };
 
-  const inputClass = "w-full px-2 py-1.5 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30";
+  const inputClass = "w-full px-2 py-1.5 rounded-lg border border-slate-300 bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30";
 
   return (
     <tr className="bg-teal-50/50 border-b border-teal-100">
@@ -118,11 +118,11 @@ const LabValuesTable = ({ docId, labValues, onChange }: { docId: string; labValu
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-gray-200">
-            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Test</th>
-            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Value</th>
-            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Reference Range</th>
-            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Status</th>
+          <tr className="border-b border-slate-200">
+            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">Test</th>
+            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">Value</th>
+            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">Reference Range</th>
+            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">Status</th>
             <th className="py-3 px-2"><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
@@ -131,8 +131,8 @@ const LabValuesTable = ({ docId, labValues, onChange }: { docId: string; labValu
             editing === idx ? (
               <EditRow key={idx} docId={docId} index={idx} lab={lab} onSaved={(saved) => handleSaved(idx, saved)} onCancel={() => setEditing(null)} />
             ) : (
-              <tr key={idx} className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors">
-                <td className="py-4 px-4 text-gray-800 font-medium">
+              <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                <td className="py-4 px-4 text-slate-800 font-medium">
                   {lab.display_name || lab.test}
                   {lab.edited && (
                     <span className="ml-2 inline-block px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[11px] font-medium align-middle" title={describeOriginal(lab)}>
@@ -140,10 +140,10 @@ const LabValuesTable = ({ docId, labValues, onChange }: { docId: string; labValu
                     </span>
                   )}
                 </td>
-                <td className="py-4 px-4 text-gray-700 whitespace-nowrap">
+                <td className="py-4 px-4 text-slate-700 whitespace-nowrap">
                   <span className="font-semibold">{lab.value}</span> {lab.unit}
                 </td>
-                <td className="py-4 px-4 text-gray-500">{lab.reference_range || "N/A"}</td>
+                <td className="py-4 px-4 text-slate-500">{lab.reference_range || "N/A"}</td>
                 <td className="py-4 px-4"><StatusBadge status={lab.status} /></td>
                 <td className="py-4 px-2 text-right">
                   <button

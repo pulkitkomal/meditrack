@@ -41,7 +41,7 @@ const RegisterForm = ({ setUser }: RegisterFormProps) => {
   const inputStyle = "w-full px-4 py-3.5 rounded-glass border border-slate-200 bg-glass-light backdrop-blur-[8px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all";
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8 bg-[#f2f2f7]">
+    <div className="min-h-screen flex items-center justify-center p-8 bg-slate-50">
       {showPrivacy && <LegalModal document="privacy" onClose={() => setShowPrivacy(false)} />}
       <div className="w-full max-w-md">
         {/* Logo */}

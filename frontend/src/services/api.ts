@@ -22,10 +22,11 @@ export const authService = {
 
 export const documentService = {
   upload: (data: FormData) => api.post("/documents/upload", data),
-  bulkUpload: (files: File[], category: string) => {
+  bulkUpload: (files: File[], category: string, documentDate?: string) => {
     const formData = new FormData();
     files.forEach(file => formData.append("files", file));
     formData.append("category", category);
+    if (documentDate) formData.append("document_date", documentDate);
     return api.post("/documents/bulk-upload", formData);
   },
   list: (params?: { category?: string; date_from?: string; date_to?: string; upload_from?: string; upload_to?: string }) => api.get("/documents/", { params: params || {} }),
