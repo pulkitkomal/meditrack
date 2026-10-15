@@ -4,7 +4,7 @@ from app.services.storage import delete_stored_file
 logger = logging.getLogger("medical-records-app")
 
 USER_OWNED_COLLECTIONS = [
-    "documents", "analysis_results", "analysis_tasks", "document_chunks", "health_readings", "token_usage",
+    "documents", "analysis_results", "analysis_tasks", "document_chunks", "health_readings", "token_usage", "chat_conversations",
 ]
 
 

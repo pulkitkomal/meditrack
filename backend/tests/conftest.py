@@ -20,7 +20,7 @@ from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
 from app.main import app
-from app.routes import analysis, auth, documents, readings, telegram, users
+from app.routes import analysis, auth, chat, documents, readings, telegram, users
 from app.utils.security import create_access_token
 
 
@@ -32,7 +32,7 @@ def db():
 @pytest.fixture
 def client(db):
     auth.login_limiter._attempts.clear()
-    for module in (analysis, auth, documents, readings, telegram, users):
+    for module in (analysis, auth, chat, documents, readings, telegram, users):
         app.dependency_overrides[module.get_db] = lambda: db
     # Not used as a context manager so the lifespan (real Mongo, Telegram bot) never starts.
     yield TestClient(app)

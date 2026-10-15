@@ -8,6 +8,7 @@ from app.oauth2 import oauth2_scheme
 from app.utils.security import get_current_user
 from app.services.analysis import get_user_analyses, get_analysis_for_document, analyze_document, save_analysis_result
 from app.services.chatbot import generate_doctor_questions, chat_with_medical_advisor
+from app.routes.chat import ensure_allowance
 from app.services.comparison import compare_lab_values, calculate_health_score, get_active_conditions, predict_conditions, get_latest_key_metrics
 from app.services.token_tracker import get_user_usage, get_usage_history, get_tokens_used_since
 from app.config import settings
@@ -320,13 +321,8 @@ async def chat(
 ):
     logger.info(f"[ANALYSIS-ROUTE] POST /chat - Medical advisor chat")
     user = await get_current_user(token, db)
-    since = datetime.utcnow() - timedelta(days=1)
-    if await get_tokens_used_since(db, str(user["_id"]), since, category="chat") >= settings.DAILY_CHAT_TOKEN_LIMIT:
-        logger.warning(f"[ANALYSIS-ROUTE] Daily chat quota reached for user {user['_id']}")
-        raise HTTPException(429, "You've reached today's chat limit. Please try again tomorrow.")
-    logger.info(f"[ANALYSIS-ROUTE] User: {user['_id']}, message length: {len(message)}")
-    
-    result = await chat_with_medical_advisor(db, str(user["_id"]), message)
+    await ensure_allowance(db, str(user["_id"]))
+    result = await chat_with_medical_advisor(db, user, message.strip())
     logger.info(f"[ANALYSIS-ROUTE] Chat response ready, sources: {len(result.get('sources', []))}")
     return result
 

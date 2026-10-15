@@ -18,7 +18,9 @@ A full-stack health records management application with Telegram bot integration
 ### AI Analysis
 - Automatic extraction of lab values, medications, and diagnoses
 - Smart document summary generation
-- Medical advisor chatbot for health questions
+- **Health Assistant chat**: Answers from your dated lab results (with earlier values), medications, diagnoses, and the last 30 days of home readings in your glucose unit; streams replies, remembers the conversation, cites the records it used, and suggests questions based on what's flagged
+- **Safety first**: Messages describing an emergency (chest pain, stroke signs, very low or high glucose, a blood pressure crisis, self-harm) get an urgent-care reply straight away without calling the AI; the assistant never advises starting, stopping or changing medication
+- Saved conversations with history, delete, and feedback on answers; conversations are included in data export and account deletion
 - Health insights and trend analysis
 
 ### Health Dashboard
@@ -62,6 +64,7 @@ The app features a premium, clean design inspired by Apple Health:
 
 ## Recent Updates
 
+- **Better Health Assistant**: Home readings and dates in its context, conversation memory, streaming, saved conversations, clickable sources, emergency handling, and one shared chat panel for desktop and mobile
 - **UI refresh**: Dark mode, a needs-attention Home, sparkline metric cards, a single upload drop zone with a searchable month-grouped records list, tag inputs and new preferences in Settings, text labels on every coloured status, and loading placeholders instead of spinners
 
 - **Vitals on the website**: Add, edit, and delete glucose (mg/dL or mmol/L), blood pressure, and weight readings from the Vitals tab, not just Telegram
@@ -122,6 +125,8 @@ CORS_ORIGINS=http://localhost:6363
 COOKIE_SECURE=false
 # Per-user OpenAI token budget for the chat assistant over a rolling 24 hours
 DAILY_CHAT_TOKEN_LIMIT=100000
+# Optional: a different OpenAI model for the chat assistant (defaults to OPENAI_MODEL)
+OPENAI_CHAT_MODEL=
 
 # AWS S3 (optional)
 AWS_S3_BUCKET=your-bucket-name
@@ -213,7 +218,15 @@ Once connected, you can:
 - `GET /api/analysis/{doc_id}` - Get analysis results
 - `GET /api/analysis/history` - Get analysis history
 - `GET /api/analysis/summary` - Get health summary
-- `POST /api/analysis/chat` - Chat with medical advisor
+- `POST /api/analysis/chat` - Chat without streaming (kept for API clients)
+
+### Health Assistant
+- `GET /api/chat/status` - Suggested questions and today's allowance
+- `POST /api/chat/messages` - Send a message (`message`, optional `conversation_id`); streams newline-delimited JSON events
+- `GET /api/chat/conversations` - List saved conversations
+- `GET /api/chat/conversations/{id}` - Read a conversation
+- `DELETE /api/chat/conversations/{id}` / `DELETE /api/chat/conversations` - Delete one or all
+- `POST /api/chat/conversations/{id}/messages/{index}/feedback` - Rate an answer (`up`, `down` or `null`)
 
 ### Telegram
 - `GET /api/telegram/config` - Get Telegram settings

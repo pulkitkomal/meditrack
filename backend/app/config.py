@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     FRONTEND_PORT: int = 6363
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_CHAT_MODEL: str = ""  # defaults to OPENAI_MODEL
     AWS_S3_BUCKET: str = ""
     AWS_REGION: str = "us-east-1"
     AWS_ACCESS_KEY_ID: str = ""

@@ -90,7 +90,7 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
       case "insights":
         return <InsightsTab userConditions={user.medical_conditions || []} glucoseUnit={user.glucose_unit} onNavigate={handleTabChange} />;
       case "chat":
-        return isMobile ? <ChatPage userConditions={user.medical_conditions || []} /> : null;
+        return isMobile ? <ChatPage onBack={() => handleTabChange("overview")} /> : null;
       default:
         return <OverviewTab onNavigate={handleTabChange} />;
     }
@@ -100,8 +100,8 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
 
   if (activeTab === "chat" && isMobile) {
     return (
-      <div className="h-screen flex flex-col bg-slate-50">
-        <ChatPage userConditions={user.medical_conditions || []} onBack={() => handleTabChange("overview")} />
+      <div className="h-[100dvh] flex flex-col bg-surface">
+        <ChatPage onBack={() => handleTabChange("overview")} />
       </div>
     );
   }
@@ -248,7 +248,7 @@ const Dashboard = ({ user, setUser }: { user: User; setUser: (u: User | null) =>
       {isMobile && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />}
 
       {/* Chat Widget - Desktop only */}
-      {!isMobile && <ChatWidget isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} userConditions={user.medical_conditions || []} />}
+      {!isMobile && <ChatWidget isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />}
 
     </div>
   );
