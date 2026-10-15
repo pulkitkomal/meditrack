@@ -120,7 +120,7 @@ const ReadingFormModal = ({ reading, defaultType = "glucose", glucoseUnit = "mg/
                 placeholder={type === "weight" ? "70.5" : unit === "mmol/L" ? "5.5" : "100"} />
               {type === "glucose" ? (
                 <select value={unit} onChange={e => setUnit(e.target.value as "mg/dL" | "mmol/L")}
-                  className="input-premium w-28" aria-label="Glucose unit">
+                  className="input-premium w-32 shrink-0" aria-label="Glucose unit">
                   <option value="mg/dL">mg/dL</option>
                   <option value="mmol/L">mmol/L</option>
                 </select>
@@ -139,7 +139,7 @@ const ReadingFormModal = ({ reading, defaultType = "glucose", glucoseUnit = "mg/
 
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
-        <div className="flex gap-3 pt-2">
+        <div className="flex gap-3 pt-2 pb-1 sticky bottom-0 bg-surface/95 -mx-5 px-5">
           <button type="submit" disabled={saving} className="btn-primary flex-1 disabled:opacity-60">
             {saving ? "Saving..." : editing ? "Save changes" : "Add reading"}
           </button>

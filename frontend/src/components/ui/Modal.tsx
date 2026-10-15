@@ -19,7 +19,10 @@ const Modal = ({ title, onClose, children, maxWidth = "max-w-2xl" }: ModalProps)
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const dialog = dialogRef.current;
     const focusable = () => Array.from(dialog?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).filter(el => !el.hasAttribute("disabled"));
-    (focusable().find(el => el.tagName !== "BUTTON") ?? focusable()[0])?.focus();
+    // Focusing a field on touch screens opens the keyboard, which covers the sheet's action buttons.
+    const touch = window.matchMedia("(pointer: coarse)").matches;
+    if (touch) dialog?.focus();
+    else (focusable().find(el => el.tagName !== "BUTTON") ?? focusable()[0])?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -55,7 +58,8 @@ const Modal = ({ title, onClose, children, maxWidth = "max-w-2xl" }: ModalProps)
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`glass-surface-xl ${maxWidth} w-full max-h-[90vh] sm:max-h-[80vh] overflow-hidden shadow-glass-elevated rounded-b-none sm:rounded-glass-xl flex flex-col`}
+        tabIndex={-1}
+        className={`glass-surface-xl ${maxWidth} w-full max-h-[90dvh] sm:max-h-[80vh] overflow-hidden focus:outline-none shadow-glass-elevated rounded-b-none sm:rounded-glass-xl flex flex-col`}
       >
         <div className="flex items-center justify-between p-5 border-b border-glass-border-subtle">
           <h2 id={titleId} className="text-xl font-bold text-slate-800">{title}</h2>
@@ -63,7 +67,7 @@ const Modal = ({ title, onClose, children, maxWidth = "max-w-2xl" }: ModalProps)
             <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
-        <div className="overflow-y-auto">{children}</div>
+        <div className="overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)] sm:pb-0">{children}</div>
       </div>
     </div>
   );

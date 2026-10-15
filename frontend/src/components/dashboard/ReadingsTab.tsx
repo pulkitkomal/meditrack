@@ -189,9 +189,9 @@ const ReadingsTab = () => {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-slate-500">Log readings here or by messaging the Telegram bot.</p>
-        <button onClick={() => openAdd()} className="btn-primary flex items-center gap-2 whitespace-nowrap">
+        <button onClick={() => openAdd()} className="btn-primary flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -291,7 +291,37 @@ const ReadingsTab = () => {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <ul className="sm:hidden divide-y divide-slate-100">
+              {visibleReadings.map((reading) => {
+                const status = readingStatus(reading, dryWeight);
+                return (
+                  <li key={reading.id} className="flex items-center gap-3 py-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-slate-800">{formatValue(reading)}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_STYLES[reading.type].badge}`}>
+                          {TYPE_STYLES[reading.type].label}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5 truncate">
+                        {formatDate(reading.timestamp)} · {SOURCE_LABELS[reading.source] || reading.source} · <span className={status.color}>{status.label}</span>
+                      </p>
+                    </div>
+                    <button onClick={() => setForm({ reading })} className="p-2 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50" aria-label={`Edit reading from ${formatDate(reading.timestamp)}`}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button onClick={() => handleDelete(reading)} className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50" aria-label={`Delete reading from ${formatDate(reading.timestamp)}`}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-100">
