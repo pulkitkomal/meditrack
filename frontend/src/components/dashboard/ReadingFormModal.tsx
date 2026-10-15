@@ -80,7 +80,7 @@ const ReadingFormModal = ({ reading, defaultType = "glucose", glucoseUnit = "mg/
   return (
     <Modal title={editing ? "Edit reading" : "Add reading"} onClose={onClose} maxWidth="max-w-md">
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
-        <div role="radiogroup" aria-label="Reading type" className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl">
+        <div role="radiogroup" aria-label="Reading type" className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-50 rounded-xl">
           {TYPE_OPTIONS.map(option => (
             <button
               key={option.id}

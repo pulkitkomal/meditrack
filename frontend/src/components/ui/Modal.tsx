@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   title: string;
@@ -48,7 +49,7 @@ const Modal = ({ title, onClose, children, maxWidth = "max-w-2xl" }: ModalProps)
     };
   }, []);
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end sm:items-center justify-center z-[60] sm:p-4"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
@@ -59,7 +60,7 @@ const Modal = ({ title, onClose, children, maxWidth = "max-w-2xl" }: ModalProps)
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`glass-surface-xl ${maxWidth} w-full max-h-[90dvh] sm:max-h-[80vh] overflow-hidden focus:outline-none shadow-glass-elevated rounded-b-none sm:rounded-glass-xl flex flex-col`}
+        className={`glass-surface-xl bg-surface ${maxWidth} w-full max-h-[90dvh] sm:max-h-[80vh] overflow-hidden focus:outline-none shadow-glass-elevated rounded-b-none sm:rounded-glass-xl flex flex-col`}
       >
         <div className="flex items-center justify-between p-5 border-b border-glass-border-subtle">
           <h2 id={titleId} className="text-xl font-bold text-slate-800">{title}</h2>
@@ -69,7 +70,8 @@ const Modal = ({ title, onClose, children, maxWidth = "max-w-2xl" }: ModalProps)
         </div>
         <div className="overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)] sm:pb-0">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
