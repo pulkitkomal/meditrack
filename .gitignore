@@ -32,3 +32,5 @@ uploads_backup/
 # OS
 .DS_Store
 Thumbs.db
+# Demo video tooling (kept local)
+demo-video/

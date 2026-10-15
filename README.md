@@ -6,6 +6,12 @@ Sehat keeps your medical records and daily readings in one place and helps you u
 
 > **Created with [OpenCode](https://opencode.ai)** and developed further with the **[Cursor](https://cursor.com) AI coding agent**. See [Acknowledgements](#acknowledgements).
 
+## Demo
+
+[![Watch the Sehat demo video](docs/demo-poster.jpg)](docs/demo.mp4)
+
+*Click the image to watch the 40-second walkthrough: sign in, Home, Vitals, Records, AI-extracted lab results, Insights and the Health Assistant.*
+
 ## Features
 
 ### Document Management
